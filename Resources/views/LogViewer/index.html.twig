@@ -1,0 +1,93 @@
+{% extends '@OroUI/actions/index.html.twig' %}
+{% import '@OroUI/macros.html.twig' as UI %}
+
+{% set pageTitle = 'genaker.log_viewer.title'|trans %}
+
+{% block content %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('bundles/genakerlogviewer/css/log-viewer-index.css') }}">
+
+    <div class="lv-index-wrap"
+         data-page-component-module="genakerlogviewer/js/app/components/log-viewer-index-component">
+
+        <table class="grid table table-bordered lv-index-table">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th class="lv-col-size">Size</th>
+                    <th class="lv-col-modified">Last Modified</th>
+                    <th class="lv-col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% if logFiles is empty %}
+                <tr>
+                    <td colspan="4" class="lv-col-empty">No log files found.</td>
+                </tr>
+            {% else %}
+                {% for file in logFiles %}
+                <tr>
+                    <td>
+                        <a href="{{ path('genaker_log_viewer_view', {fileName: file.file_name}) }}">{{ file.file_name }}</a>
+                    </td>
+                    <td class="lv-col-size">{{ file.size }}</td>
+                    <td>{{ file.modified }}</td>
+                    <td class="lv-col-actions">
+                        <a href="{{ path('genaker_log_viewer_view', {fileName: file.file_name}) }}" class="lv-index-action-link">View</a>
+                        <a href="#"
+                           class="lv-ajax-download lv-index-action-link"
+                           data-download-url="{{ path('genaker_log_viewer_download', {fileName: file.file_name}) }}"
+                           data-file-name="{{ file.file_name }}">Download</a>
+                        <a href="#"
+                           class="lv-ajax-delete lv-index-delete-link"
+                           data-delete-url="{{ path('genaker_log_viewer_delete', {fileName: file.file_name}) }}"
+                           data-file-name="{{ file.file_name }}"
+                           data-csrf="{{ csrf_token('delete') }}">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="lv-info-bar-wrap">
+        <div class="lv-info-bar">
+            <span class="lv-info-bar-label">OPcache</span>
+            {% if not opcache.enabled %}
+                <span class="lv-info-bar-na">not available</span>
+            {% else %}
+                <span class="lv-info-pill">
+                    <span class="lv-pill-label">Files cached</span>
+                    <strong class="lv-pill-value">{{ opcache.files_cached|number_format }}</strong>
+                    <span class="lv-pill-sub">/ {{ opcache.max_files|number_format }}</span>
+                </span>
+                <span class="lv-info-pill">
+                    <span class="lv-pill-label">Memory</span>
+                    <strong class="lv-pill-value {% if opcache.memory_used_percent > 80 %}lv-metric-danger{% elseif opcache.memory_used_percent > 60 %}lv-metric-warn{% else %}lv-metric-ok{% endif %}">
+                        {{- opcache.memory_used_mb }} MB</strong>
+                    <span class="lv-pill-sub">/ {{ opcache.memory_allowed_mb }} MB &nbsp;({{ opcache.memory_used_percent }}%)</span>
+                </span>
+                <span class="lv-info-pill">
+                    <span class="lv-pill-label">Hits</span>
+                    <strong class="lv-pill-value">{{ opcache.hits|number_format }}</strong>
+                    <span class="lv-pill-sub">misses: {{ opcache.misses|number_format }}</span>
+                </span>
+                <span class="lv-info-pill">
+                    <span class="lv-pill-label">Timestamp validation</span>
+                    <strong class="lv-pill-value {% if opcache.timestamp_validation %}lv-metric-ok{% else %}lv-metric-danger{% endif %}">
+                        {%- if opcache.timestamp_validation %}Enabled{% else %}Disabled{% endif %}</strong>
+                </span>
+            {% endif %}
+            <span class="lv-info-pill">
+                <span class="lv-pill-label">Xdebug</span>
+                {% if xdebug.loaded %}
+                    <strong class="lv-pill-value lv-metric-danger">Enabled</strong>
+                    <span class="lv-pill-sub">v{{ xdebug.version }} &nbsp;&bull;&nbsp; mode: {{ xdebug.mode }}</span>
+                {% else %}
+                    <strong class="lv-pill-value lv-metric-ok">Disabled</strong>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+{% endblock content %}

@@ -1,0 +1,222 @@
+{% extends '@OroUI/actions/index.html.twig' %}
+
+{% set pageTitle = fileName %}
+
+{% block navButtons %}
+    <a id="btn-download"
+       class="btn btn-default"
+       href="{{ path('genaker_log_viewer_download', {fileName: fileName}) }}"
+       download="{{ fileName }}"
+       target="_blank"
+       data-bypass="true">
+        <span id="btn-download-icon">&#8681;</span>
+        <span id="btn-download-label">{{ 'genaker.log_viewer.download_btn'|trans }}</span>
+    </a>
+    <a class="btn btn-default" href="{{ path('genaker_log_viewer_index') }}">
+        {{ 'genaker.log_viewer.back_to_list'|trans }}
+    </a>
+{% endblock %}
+
+{% block content %}
+{{ parent() }}
+<link rel="stylesheet" href="{{ asset('bundles/genakerlogviewer/css/log-viewer-view.css') }}">
+
+<div class="lv-shell" id="log-viewer-wrap"
+     data-page-component-module="genakerlogviewer/js/app/components/log-viewer-component"
+     data-page-component-options="{{ {
+         logOffset:     logOffset|default(0),
+         fileName:      fileName,
+         liveUrl:       path('genaker_log_viewer_live_update'),
+         reloadUrl:     path('genaker_log_viewer_reload'),
+         grepUrl:       path('genaker_log_viewer_grep'),
+         exceptionsUrl: path('genaker_log_viewer_exceptions'),
+         uniqueEntriesUrl: path('genaker_log_viewer_unique_entries'),
+         throughputUrl: path('genaker_log_viewer_throughput'),
+         multiTailUrl:  path('genaker_log_viewer_multi_tail'),
+         multiGrepUrl:  path('genaker_log_viewer_multi_grep'),
+         viewBase:      path('genaker_log_viewer_view', {fileName: fileName}),
+         initGrep:      grepQuery|default(''),
+         initGrepFull:  grepFull|default(false),
+         logFiles:      logFiles|default([])
+     }|json_encode }}">
+
+    {# ── Title bar ── #}
+    <div class="lv-titlebar">
+        <a href="{{ path('oro_default') }}" class="lv-dot lv-dot-r" title="Close — go to dashboard" style="text-decoration:none; cursor:pointer;"></a>
+        <span class="lv-dot lv-dot-y" id="btn-minimize" title="Minimize / restore"></span>
+        <span class="lv-dot lv-dot-g" id="btn-fullscreen" title="Fullscreen / restore"></span>
+        <span class="lv-filename">{{ fileName }}</span>
+        <span id="lv-count-error" class="lv-level-count lv-level-count-error" style="display:none;" title="ERROR + CRITICAL lines in buffer"></span>
+        <span id="lv-count-warn"  class="lv-level-count lv-level-count-warn"  style="display:none;" title="WARNING lines in buffer"></span>
+        <span id="lv-count-info"  class="lv-level-count lv-level-count-info"  style="display:none;" title="INFO lines in buffer"></span>
+        <span id="live-indicator">&#9675; waiting…</span>
+    </div>
+
+    {# ── Toolbar row 1: view controls ── #}
+    <div class="lv-toolbar">
+        <span class="lv-label">Lines</span>
+        <input type="number" id="lines-count" value="{{ lines }}" min="10" max="10000" class="lv-input lv-input-md">
+        <span class="lv-hint">
+            <button type="button" class="lv-btn" id="btn-apply">&#10003; Apply</button>
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Apply Lines</strong>Reload the log showing the specified number of tail lines. Range: 10–10 000. Changes take effect immediately on click.</span>
+        </span>
+        <span class="lv-sep"></span>
+        <span class="lv-hint">
+            <button type="button" class="lv-btn" id="btn-wrap">&#8644; Wrap</button>
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Toggle Wrap</strong>Switch between <em>no-wrap</em> (horizontal scroll, easier for wide log lines) and <em>word-wrap</em> (every line wraps within the panel). Your preference is saved in localStorage.</span>
+        </span>
+        <span class="lv-hint">
+            <button type="button" class="lv-btn" id="btn-terminal">&#9788; Light</button>
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Light / Dark Mode</strong>Toggle between the dark terminal theme and a light white background. Preference is saved across sessions.</span>
+        </span>
+        <span class="lv-sep"></span>
+        <span class="lv-hint">
+            <button type="button" class="lv-btn" id="btn-clear-mode">&#9003; Clear</button>
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Clear Mode</strong>When <em>ON</em> (highlighted orange): each live-tail update <strong>replaces</strong> all existing content with only the newly arrived lines — useful when you only care about the latest activity.<br>When <em>OFF</em>: new lines are appended.</span>
+        </span>
+        <span class="lv-label" style="margin-left:2px;">Max</span>
+        <input type="number" id="max-rows" value="20000" min="1000" max="500000" class="lv-input lv-input-sm">
+        <span class="lv-hint">
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Max Rows</strong>Auto-flush threshold. When the in-memory line buffer exceeds this number the oldest lines are trimmed to keep only the latest <em>N</em> rows. Changing the value trims the buffer immediately. Default: 20 000.</span>
+        </span>
+        <span class="lv-sep"></span>
+        <span class="lv-hint">
+            <button type="button" class="lv-btn" id="btn-pause">&#9646;&#9646; Pause</button>
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Pause / Resume</strong>Temporarily stop the 10-second live-tail polling without leaving the page. The button turns red while paused. Click again to resume. The tab-sleep guard still applies (polling is also skipped automatically when the browser tab is hidden).</span>
+        </span>
+        <span class="lv-hint">
+            <button type="button" class="lv-btn" id="btn-reload">&#8635; Reload</button>
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Reload Data</strong>Fetch a fresh tail of the file (using the current Lines value) without a full page reload. The textarea is replaced in-place and the live-tail offset is reset to the new end of file.</span>
+        </span>
+        <span class="lv-sep"></span>
+        <button type="button" class="lv-btn" id="btn-exceptions" title="Aggregate unique exceptions from last 10 000 lines">&#9888; Exceptions</button>
+        <span id="lv-spike-badge" class="lv-spike-badge" style="display:none;"></span>
+        <button type="button" class="lv-btn" id="btn-unique-entries" title="Aggregate all repeated log entries (ignoring timestamps) from last 10 000 lines">&#9783; Unique Entries</button>
+        <button type="button" class="lv-btn" id="btn-throughput" title="Lines-per-minute throughput chart">&#9641; Graph</button>
+        <button type="button" class="lv-btn" id="btn-split-view" title="Open a second log pane side-by-side">&#8869; Split</button>
+        <button type="button" class="lv-btn" id="btn-multi-view" title="Tail / grep multiple log files in one combined table">&#9783; Multi</button>
+    </div>
+
+    {# ── Toolbar row 2: JS filter ── #}
+    <div class="lv-toolbar">
+        <span class="lv-label">Filter</span>
+        <input type="text" id="filter-js" class="lv-input lv-input-lg" placeholder="instant client-side filter…" autocomplete="off">
+        <button type="button" class="lv-btn" id="btn-filter-clear" style="display:none;">&#x2715;</button>
+        <span id="filter-match-count"></span>
+        <span class="lv-hint">
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>JS Filter (instant)</strong>Case-insensitive substring filter applied <em>in the browser</em> — no server request. Only matching lines are shown and the match count is displayed. The original buffer is untouched; clearing the field restores all lines instantly.</span>
+        </span>
+    </div>
+
+    {# ── Toolbar row 3: Grep ── #}
+    <div class="lv-toolbar">
+        <span class="lv-label">Grep</span>
+        <input type="text" id="filter-grep" class="lv-input lv-input-lg" placeholder="server-side grep pattern…" value="{{ grepQuery|default('') }}" autocomplete="off">
+        <label style="display:inline-flex; align-items:center; gap:5px; margin:0; font-size:11px; color:#5a6e8a; cursor:pointer; user-select:none;">
+            <input type="checkbox" id="grep-full" {% if grepFull|default(false) %}checked{% endif %} style="accent-color:#58a6ff;">
+            full scan
+        </label>
+        <span class="lv-hint">
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Full Scan</strong>By default grep searches only the <strong>last 50 MB</strong> of the file for speed (typically &lt;100 ms). Check <em>full scan</em> to grep the entire file — slower on large logs but finds all matches. The current URL is updated so you can share the link with your team.</span>
+        </span>
+        <button type="button" class="lv-btn lv-btn-primary" id="btn-grep">&#128269; Grep</button>
+        <div id="grep-status" style="display:none; align-items:center; gap:6px;">
+            <span class="lv-grep-active" id="grep-status-badge"></span>
+            <button type="button" class="lv-btn lv-btn-warn" id="btn-grep-clear">&#x2715; Clear</button>
+        </div>
+    </div>
+
+    {# ── Toolbar row 4: Log Level Quick Filters ── #}
+    <div class="lv-toolbar" id="lv-level-toolbar">
+        <span class="lv-label">Level</span>
+        <button type="button" class="lv-btn lv-level-btn" id="btn-level-debug"    data-level="DEBUG"    title="Show only DEBUG lines">DEBUG</button>
+        <button type="button" class="lv-btn lv-level-btn" id="btn-level-info"     data-level="INFO"     title="Show only INFO lines">INFO</button>
+        <button type="button" class="lv-btn lv-level-btn" id="btn-level-warning"  data-level="WARNING"  title="Show only WARNING lines">WARNING</button>
+        <button type="button" class="lv-btn lv-level-btn" id="btn-level-error"    data-level="ERROR"    title="Show only ERROR lines">ERROR</button>
+        <button type="button" class="lv-btn lv-level-btn" id="btn-level-critical" data-level="CRITICAL" title="Show only CRITICAL lines">CRITICAL</button>
+        <span class="lv-hint">
+            <i class="lv-hint-icon">i</i>
+            <span class="lv-hint-box"><strong>Level Quick Filters</strong> Click a level to run a server-side grep for that Monolog severity. Click the active level again to clear. Uses the same grep engine as the Grep toolbar.</span>
+        </span>
+    </div>
+
+    {# ── Exception Aggregation Panel ── #}
+    <div id="lv-exceptions-panel" style="display:none;">
+        <div class="lv-exc-header">
+            &#9888; Exception Aggregator
+            <span class="lv-exc-count-total">last 10 000 lines &mdash; click Exceptions to load</span>
+        </div>
+        <div class="lv-exc-body"></div>
+    </div>
+
+    {# ── Unique Entries Panel ── #}
+    <div id="lv-unique-panel" style="display:none;">
+        <div class="lv-exc-header">
+            &#9783; Unique Log Entry Aggregator
+            <span class="lv-exc-count-total">last 10 000 lines &mdash; groups repeated entries ignoring timestamps</span>
+        </div>
+        <div class="lv-exc-body" id="lv-unique-body"></div>
+    </div>
+
+    {# ── Throughput Panel ── #}
+    <div id="lv-throughput-panel" style="display:none;">
+        <div class="lv-throughput-header">&#9641; Throughput &mdash; lines per minute</div>
+        <div class="lv-throughput-body"></div>
+    </div>
+
+    {# ── Multi-file Combined Tail / Grep Panel ── #}
+    <div id="lv-multi-panel" style="display:none;"></div>
+
+    {# ── Log content ── #}
+    <div id="lv-panes-container">
+    <div id="lv-main-pane">
+    <div class="lv-content-wrap">
+        <textarea id="log-content" readonly>{{ logContent }}</textarea>
+    </div>
+
+    {# ── Stats bar ── #}
+    <div id="log-stats">
+        <div class="lv-stat">
+            <span class="lv-stat-label">File size</span>
+            <span class="lv-stat-value">{{ stats.fileSize }}</span>
+        </div>
+        <div class="lv-stat">
+            <span class="lv-stat-label">Mode</span>
+            <span class="lv-stat-value amber">{{ stats.mode }}</span>
+        </div>
+        <div class="lv-stat">
+            <span class="lv-stat-label">Lines shown</span>
+            <span class="lv-stat-value green" id="stat-lines">{{ stats.lineCount }}</span>
+        </div>
+        <div class="lv-stat">
+            <span class="lv-stat-label">Read time</span>
+            <span class="lv-stat-value">{{ stats.readMs }} ms</span>
+        </div>
+        <div class="lv-stat">
+            <span class="lv-stat-label">Loaded at</span>
+            <span class="lv-stat-value">{{ stats.loadedAt }}</span>
+        </div>
+        <div class="lv-stat">
+            <span class="lv-stat-label">Last update</span>
+            <span class="lv-stat-value" id="stat-last-update">—</span>
+        </div>
+        <div class="lv-stat">
+            <span class="lv-stat-label">Live received</span>
+            <span class="lv-stat-value" id="stat-bytes">0 B</span>
+        </div>
+    </div>
+    </div>{# /lv-main-pane #}
+    </div>{# /lv-panes-container #}
+
+</div>
+
+{% endblock content %}

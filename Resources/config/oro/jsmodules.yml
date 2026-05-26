@@ -1,0 +1,18 @@
+dynamic-imports:
+    genakerlogviewer:
+        - genakerlogviewer/js/app/components/log-viewer-component
+        - genakerlogviewer/js/app/components/log-viewer-index-component
+        - genakerlogviewer/js/app/components/log-viewer-download-btn-mixin
+        - genakerlogviewer/js/app/components/log-viewer-exception-aggregator-mixin
+        - genakerlogviewer/js/app/components/log-viewer-grep-mixin
+        - genakerlogviewer/js/app/components/log-viewer-js-filter-mixin
+        - genakerlogviewer/js/app/components/log-viewer-level-filter-mixin
+        - genakerlogviewer/js/app/components/log-viewer-live-tail-mixin
+        - genakerlogviewer/js/app/components/log-viewer-multi-mixin
+        - genakerlogviewer/js/app/components/log-viewer-split-mixin
+        - genakerlogviewer/js/app/components/log-viewer-theme-wrap-mixin
+        - genakerlogviewer/js/app/components/log-viewer-throughput-mixin
+        - genakerlogviewer/js/app/components/log-viewer-window-controls-mixin
+        - genakerlogviewer/js/app/components/log-viewer-error-spike-mixin
+        - genakerlogviewer/js/app/components/log-viewer-level-counts-mixin
+        - genakerlogviewer/js/app/components/perf-dashboard-component

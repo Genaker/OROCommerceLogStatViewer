@@ -1,0 +1,89 @@
+{% extends '@OroUI/actions/index.html.twig' %}
+
+{% set pageTitle = 'Performance Dashboard' %}
+
+{% block content %}
+{{ parent() }}
+<link rel="stylesheet" href="/bundles/genakerlogviewer/css/perf-dashboard.css?v={{ file_version('bundles/genakerlogviewer/css/perf-dashboard.css') }}">
+<script>localStorage.removeItem('pd_theme');</script>
+
+<div class="pd-shell"
+     data-page-component-module="genakerlogviewer/js/app/components/perf-dashboard-component"
+     data-page-component-options="{{ { instancesUrl: path('genaker_perf_dashboard_instances') }|json_encode }}">
+
+    {# ── Header bar ── #}
+    <div class="pd-header">
+        <div class="pd-header-left">
+            <span class="pd-logo">&#9636;</span>
+            <span class="pd-title">Performance Dashboard</span>
+            <span class="pd-env-badge">LIVE</span>
+        </div>
+
+        <div class="pd-header-center">
+            <div class="pd-stat-pill" data-tip="Total discovered hosts">
+                <span class="pd-spi">&#9641;</span>
+                <span class="pd-spl">Hosts</span>
+                <span class="pd-spv" id="pd-s-hosts">—</span>
+            </div>
+            <div class="pd-stat-pill pd-sp-green" data-tip="Reported in the last 90 s">
+                <span class="pd-spi pd-dot-live">&#9679;</span>
+                <span class="pd-spl">Live</span>
+                <span class="pd-spv" id="pd-s-live">—</span>
+            </div>
+            <div class="pd-stat-pill pd-sp-amber" data-tip="Last report between 90 s and 10 min ago">
+                <span class="pd-spi pd-dot-stale">&#9679;</span>
+                <span class="pd-spl">Stale</span>
+                <span class="pd-spv" id="pd-s-stale">—</span>
+            </div>
+            <div class="pd-stat-pill pd-sp-grey" data-tip="No report in over 10 min — may be down">
+                <span class="pd-spi pd-dot-old">&#9675;</span>
+                <span class="pd-spl">Offline</span>
+                <span class="pd-spv" id="pd-s-offline">—</span>
+            </div>
+            <div class="pd-stat-sep"></div>
+            <div class="pd-stat-pill" data-tip="Highest 1-min load avg across all instances">
+                <span class="pd-spi">&#9650;</span>
+                <span class="pd-spl">Peak Load</span>
+                <span class="pd-spv" id="pd-s-load">—</span>
+            </div>
+            <div class="pd-stat-pill" data-tip="Highest memory usage % across all instances">
+                <span class="pd-spi">&#9650;</span>
+                <span class="pd-spl">Peak Mem</span>
+                <span class="pd-spv" id="pd-s-mem">—</span>
+            </div>
+            <div class="pd-stat-pill" data-tip="Average memory usage % across all instances">
+                <span class="pd-spi">&#8776;</span>
+                <span class="pd-spl">Avg Mem</span>
+                <span class="pd-spv" id="pd-s-avgmem">—</span>
+            </div>
+        </div>
+
+        <div class="pd-header-right">
+            <span id="pd-last-refresh" class="pd-last-refresh"></span>
+            <button id="pd-btn-theme" class="btn btn-sm btn-default" data-tip="Switch light / dark theme">
+                <span id="pd-theme-icon">&#9790;</span>
+            </button>
+            <button id="pd-btn-refresh" class="btn btn-sm btn-default" data-tip="Fetch latest metrics right now">
+                &#10227; Refresh
+            </button>
+            <button id="pd-btn-play" class="btn btn-sm btn-primary" data-tip="Start / pause automatic polling every 30 s">
+                <span id="pd-play-icon">&#9654;</span>
+                <span id="pd-btn-play-label">Auto-refresh</span>
+            </button>
+            <div id="pd-countdown-wrap" class="pd-countdown-wrap">
+                <div id="pd-countdown-bar" class="pd-countdown-bar"></div>
+            </div>
+            <span id="pd-status" class="pd-status-dot">&#9675;</span>
+        </div>
+    </div>
+
+    {# ── Instance cards ── #}
+    <div id="pd-cards" class="pd-cards">
+        <div class="pd-splash">
+            <div class="pd-splash-glyph pd-splash-spin">&#9676;</div>
+            <div class="pd-splash-msg">Loading metrics&hellip;</div>
+        </div>
+    </div>
+
+</div>
+{% endblock content %}

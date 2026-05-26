@@ -1,0 +1,16 @@
+genaker:
+  log_viewer:
+    title: Log Files
+    disabled_message: Log Viewer is disabled.
+    lines_label: Lines
+    apply_btn: Apply
+    toggle_wrap_btn: Toggle Wrap
+    live_update_status: 'Live update: every 3 s'
+    download_btn: Download
+    back_to_list: Back to Log Files
+    delete_btn: Delete
+    delete_confirm: 'Delete log file %s?'
+    delete_msg: 'Log file "%s" has been deleted.'
+    download_error: 'Could not download log file "%s".'
+    delete_error: 'Could not delete log file "%s".'
+    file_error: 'Log file "%s" not found or is not readable.'

@@ -1,0 +1,58 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Genaker\Bundle\LogViewerBundle\Twig\FileVersionExtension:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+        tags:
+            - { name: twig.extension }
+
+    Genaker\Bundle\LogViewerBundle\Service\LogFileValidator:
+        arguments:
+            $logDir: '%kernel.project_dir%/var/logs'
+
+    Genaker\Bundle\LogViewerBundle\Service\LogFileReader:
+        arguments:
+            $logDir: '%kernel.project_dir%/var/logs'
+
+    Genaker\Bundle\LogViewerBundle\EventListener\LogFileGridListener:
+        tags:
+            - { name: kernel.event_listener, event: 'oro_datagrid.datagrid.build.after', method: onBuildAfter }
+
+    Genaker\Bundle\LogViewerBundle\Controller\LogViewerController:
+        public: true
+        autoconfigure: false
+        arguments:
+            - '@Genaker\Bundle\LogViewerBundle\Service\LogFileReader'
+            - '@Genaker\Bundle\LogViewerBundle\Service\LogFileValidator'
+            - '@oro_config.manager'
+            - '@translator'
+            - '%kernel.environment%'
+            - '@twig'
+        tags: ['controller.service_arguments']
+
+    Genaker\Bundle\LogViewerBundle\Service\ServerMetricsCollector: ~
+
+    Genaker\Bundle\LogViewerBundle\Service\PerfDashboardStore: ~
+
+    Genaker\Bundle\LogViewerBundle\EventListener\PerfReportListener:
+        arguments:
+            $logger: '@logger'
+        tags:
+            - { name: kernel.event_listener, event: kernel.terminate, method: onKernelTerminate }
+
+    Genaker\Bundle\LogViewerBundle\Consumption\PerfMqReportExtension:
+        arguments:
+            $logger: '@logger'
+        tags:
+            - { name: oro_message_queue.consumption.extension }
+
+    Genaker\Bundle\LogViewerBundle\Controller\PerfDashboardController:
+        public: true
+        autoconfigure: false
+        tags:
+            - 'controller.service_arguments'
+            - 'container.service_subscriber'

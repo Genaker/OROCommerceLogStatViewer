@@ -1,0 +1,130 @@
+/* Log Viewer — index page styles */
+
+/* ── Page wrapper ───────────────────────────────────────────── */
+.lv-index-wrap {
+    margin: 16px 20px 24px;
+}
+
+/* ── Files table ─────────────────────────────────────────────── */
+.lv-index-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.lv-index-table thead tr {
+    background: #f5f5f5;
+}
+
+.lv-index-table th {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+    text-align: left;
+}
+
+.lv-index-table th.lv-col-size {
+    text-align: right;
+    width: 130px;
+}
+
+.lv-index-table th.lv-col-modified {
+    width: 180px;
+}
+
+.lv-index-table th.lv-col-actions {
+    text-align: center;
+    width: 160px;
+}
+
+.lv-index-table td {
+    padding: 7px 12px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+}
+
+.lv-index-table td.lv-col-size {
+    text-align: right;
+}
+
+.lv-index-table td.lv-col-actions {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.lv-index-table td.lv-col-empty {
+    padding: 16px 12px;
+    text-align: center;
+    color: #999;
+}
+
+.lv-index-action-link {
+    margin-right: 6px;
+}
+
+.lv-index-delete-link {
+    color: #d9534f;
+}
+
+/* ── OPcache / debug info bar ────────────────────────────────── */
+.lv-info-bar-wrap {
+    margin: 0 20px 24px;
+    padding: 0;
+}
+
+.lv-info-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 10px 14px;
+}
+
+.lv-info-bar-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: #666;
+    margin-right: 6px;
+    white-space: nowrap;
+}
+
+.lv-info-bar-na {
+    font-size: 12px;
+    color: #999;
+}
+
+.lv-info-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 3px 10px;
+    white-space: nowrap;
+}
+
+.lv-pill-label {
+    font-size: 11px;
+    color: #888;
+}
+
+.lv-pill-value {
+    font-size: 13px;
+    color: #333;
+}
+
+.lv-pill-sub {
+    font-size: 11px;
+    color: #bbb;
+}
+
+/* Metric colour variants */
+.lv-metric-ok     { color: #3c763d; }
+.lv-metric-warn   { color: #e8821a; }
+.lv-metric-danger { color: #d9534f; }

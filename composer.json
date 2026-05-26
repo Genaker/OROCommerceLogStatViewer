@@ -1,0 +1,42 @@
+{
+    "name": "genaker/oro-commerce-log-stat-viewer",
+    "description": "OroCommerce admin bundle — Log Viewer and Performance Dashboard with real-time metrics, live tail, grep, and multi-instance support.",
+    "type": "symfony-bundle",
+    "keywords": ["orocommerce", "log viewer", "performance dashboard", "admin", "symfony", "bundle"],
+    "homepage": "https://github.com/Genaker/OROCommerceLogStatViewer",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Yehor Shytikov",
+            "email": "yehor.shytikov@gerdau.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "symfony/framework-bundle": "^6.4 || ^7.0",
+        "symfony/twig-bundle": "^6.4 || ^7.0",
+        "oro/platform": "^6.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5 || ^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Genaker\\Bundle\\LogViewerBundle\\": ""
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Genaker\\Bundle\\LogViewerBundle\\Tests\\": "Tests/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

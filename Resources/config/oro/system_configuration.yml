@@ -1,0 +1,32 @@
+system_configuration:
+    fields:
+        genaker_log_viewer.enabled:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'Enable Log Viewer'
+                tooltip: 'Disable on production to prevent log file exposure.'
+            priority: 10
+
+        genaker_log_viewer.lines_per_page:
+            data_type: integer
+            type:      Symfony\Component\Form\Extension\Core\Type\IntegerType
+            ui_only:   true
+            options:
+                label: 'Default Lines Per Page'
+                attr:
+                    min: 10
+                    max: 1000
+            priority: 20
+
+    tree:
+        system_configuration:
+            platform:
+                children:
+                    genaker_log_viewer_group:
+                        priority: 200
+                        label:    'Log Viewer'
+                        children:
+                            genaker_log_viewer.enabled: ~
+                            genaker_log_viewer.lines_per_page: ~

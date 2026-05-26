@@ -1,0 +1,9 @@
+genaker_log_viewer:
+    resource: Genaker\Bundle\LogViewerBundle\Controller\LogViewerController
+    type: attribute
+    prefix: /
+
+genaker_perf_dashboard:
+    resource: Genaker\Bundle\LogViewerBundle\Controller\PerfDashboardController
+    type: attribute
+    prefix: /

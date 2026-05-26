@@ -1,0 +1,64 @@
+datagrids:
+    genaker_log_files_grid:
+        source:
+            type: array
+        columns:
+            file_name:
+                label:    'File Name'
+                type:     twig
+                template: '@GenakerLogViewer/LogViewer/datagrid/file_name.html.twig'
+                frontend_type: html
+            size:
+                label:     'Size (bytes)'
+                type:      field
+                data_name: size
+                frontend_type: integer
+            modified:
+                label:     'Last Modified'
+                type:      field
+                data_name: modified
+                frontend_type: string
+        sorters:
+            columns:
+                file_name:
+                    data_name: file_name
+                size:
+                    data_name: size
+                modified:
+                    data_name: modified
+            default:
+                modified: DESC
+        properties:
+            view_link:
+                type:   url
+                route:  genaker_log_viewer_view
+                params:
+                    fileName: file_name
+            download_link:
+                type:   url
+                route:  genaker_log_viewer_download
+                params:
+                    fileName: file_name
+            delete_link:
+                type:   url
+                route:  genaker_log_viewer_delete
+                params:
+                    fileName: file_name
+        actions:
+            view:
+                type:  navigate
+                label: 'View'
+                link:  view_link
+                icon:  eye
+            download:
+                type:           navigate
+                label:          'genaker.log_viewer.download_btn'
+                link:           download_link
+                icon:           download
+                acl_resource:   genaker_log_viewer_index
+            delete:
+                type:           delete
+                label:          'genaker.log_viewer.delete_btn'
+                link:           delete_link
+                icon:           trash
+                acl_resource:   genaker_log_viewer_index

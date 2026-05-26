@@ -1,0 +1,32 @@
+navigation:
+    menu_config:
+        items:
+            genaker_log_viewer_menu:
+                label:    'Log Viewer'
+                route:    'genaker_log_viewer_index'
+                position: 500
+                extras:
+                    routes:
+                        - 'genaker_log_viewer_index'
+                        - 'genaker_log_viewer_view'
+
+            genaker_perf_dashboard_menu:
+                label:    'Performance'
+                route:    'genaker_perf_dashboard_index'
+                position: 510
+                extras:
+                    routes:
+                        - 'genaker_perf_dashboard_index'
+
+        tree:
+            application_menu:
+                children:
+                    system_tab:
+                        children:
+                            genaker_log_viewer_menu: ~
+                            genaker_perf_dashboard_menu: ~
+
+    titles:
+        genaker_log_viewer_index:    'Log Files'
+        genaker_log_viewer_view:     'View Log File'
+        genaker_perf_dashboard_index: 'Performance Dashboard'
