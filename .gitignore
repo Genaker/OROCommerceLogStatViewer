@@ -5,3 +5,7 @@
 .idea/
 .phpunit.result.cache
 coverage/
+
+__pycache__/
+*.pyc
+*.pyo
