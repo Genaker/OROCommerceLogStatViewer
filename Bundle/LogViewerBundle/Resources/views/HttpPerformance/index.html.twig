@@ -1,0 +1,14 @@
+{% extends '@OroUI/actions/index.html.twig' %}
+
+{% import '@OroDataGrid/macros.html.twig' as dataGrid %}
+
+{% set pageTitle = 'HTTP Performance' %}
+
+{% block page_title %}Request Performance Monitoring{% endblock %}
+
+{% block content %}
+    {{ parent() }}
+    <div class="container-fluid">
+        {{ dataGrid.renderGrid('genaker_http_performance_grid', {}) }}
+    </div>
+{% endblock %}

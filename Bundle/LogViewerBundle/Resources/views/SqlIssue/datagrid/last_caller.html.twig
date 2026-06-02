@@ -1,0 +1,4 @@
+{% set caller = record.getValue('lastCaller') %}
+{% if caller %}
+    <div style="max-width:200px;word-break:break-all;white-space:normal;font-size:0.82em;font-family:monospace;line-height:1.4;">{{ caller }}</div>
+{% endif %}

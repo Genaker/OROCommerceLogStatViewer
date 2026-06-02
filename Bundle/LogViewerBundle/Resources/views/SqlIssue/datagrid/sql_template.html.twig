@@ -1,0 +1,12 @@
+{% set sql = record.getValue('sqlTemplate') %}
+{% if sql %}
+    {% set trimmed = sql|slice(0, 120) %}
+    {% if sql|length > 120 %}
+        <details style="max-width:600px;" onclick="event.stopPropagation()">
+            <summary style="cursor:pointer;font-family:monospace;font-size:0.82em;color:#333;word-break:break-all;">{{ trimmed }}…</summary>
+            <pre style="font-size:0.8em;white-space:pre-wrap;word-break:break-all;margin-top:4px;background:#f8f8f8;padding:6px;border-radius:3px;">{{ sql }}</pre>
+        </details>
+    {% else %}
+        <span style="font-family:monospace;font-size:0.82em;color:#333;word-break:break-all;">{{ sql }}</span>
+    {% endif %}
+{% endif %}

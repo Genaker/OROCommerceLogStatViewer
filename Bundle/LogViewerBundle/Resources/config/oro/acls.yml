@@ -1,0 +1,30 @@
+acls:
+    genaker_log_viewer_index:
+        type:       action
+        label:      'View Log Files'
+        group_name: ''
+        category:   ''
+
+    genaker_log_viewer_truncate:
+        type:       action
+        label:      'Truncate Log Files'
+        group_name: ''
+        category:   ''
+
+    genaker_perf_dashboard_index:
+        type:       action
+        label:      'View Performance Dashboard'
+        group_name: ''
+        category:   ''
+
+    genaker_http_performance_index:
+        type:       action
+        label:      'View Request Performance'
+        group_name: ''
+        category:   ''
+
+    genaker_sql_issue_index:
+        type:       action
+        label:      'View SQL Issue Tracker'
+        group_name: ''
+        category:   ''

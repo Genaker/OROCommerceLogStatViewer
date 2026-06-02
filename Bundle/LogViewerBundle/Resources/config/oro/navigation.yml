@@ -1,0 +1,51 @@
+navigation:
+    menu_config:
+        items:
+            genaker_log_viewer_menu:
+                label:    'Log Viewer'
+                route:    'genaker_log_viewer_index'
+                position: 500
+                extras:
+                    routes:
+                        - 'genaker_log_viewer_index'
+                        - 'genaker_log_viewer_view'
+
+            genaker_perf_dashboard_menu:
+                label:    'Server Monitoring'
+                route:    'genaker_perf_dashboard_index'
+                position: 510
+                extras:
+                    routes:
+                        - 'genaker_perf_dashboard_index'
+
+            genaker_http_performance_menu:
+                label:    'Request Performance'
+                route:    'genaker_http_performance_index'
+                position: 520
+                extras:
+                    routes:
+                        - 'genaker_http_performance_index'
+
+            genaker_sql_issue_menu:
+                label:    'SQL Performance'
+                route:    'genaker_sql_issue_index'
+                position: 530
+                extras:
+                    routes:
+                        - 'genaker_sql_issue_index'
+
+        tree:
+            application_menu:
+                children:
+                    system_tab:
+                        children:
+                            genaker_log_viewer_menu: ~
+                            genaker_perf_dashboard_menu: ~
+                            genaker_http_performance_menu: ~
+                            genaker_sql_issue_menu: ~
+
+    titles:
+        genaker_log_viewer_index:    'Log Files'
+        genaker_log_viewer_view:     'View Log File'
+        genaker_perf_dashboard_index: 'Server Monitoring'
+        genaker_sql_issue_index:     'SQL Performance'

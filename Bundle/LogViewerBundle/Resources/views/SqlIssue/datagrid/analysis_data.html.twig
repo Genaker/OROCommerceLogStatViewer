@@ -1,0 +1,54 @@
+{% set data = record.getValue('analysisData') %}
+{% set issueId = record.getValue('id') %}
+{% if data %}
+    <details style="max-width:480px;" onclick="event.stopPropagation()">
+        <summary style="cursor:pointer;font-size:0.82em;color:#555;">stats</summary>
+        <table style="font-size:0.78em;border-collapse:collapse;margin-top:4px;width:100%;">
+            {% if data.executions is defined %}
+            <tr><td style="color:#888;padding:1px 6px 1px 0;">Executions</td><td>{{ data.executions }}</td></tr>
+            {% endif %}
+            {% if data.uniqueParamSets is defined %}
+            <tr><td style="color:#888;padding:1px 6px 1px 0;">Unique param sets</td><td>{{ data.uniqueParamSets }}</td></tr>
+            {% endif %}
+            {% if data.sameParamsRepeats is defined and data.sameParamsRepeats > 1 %}
+                <tr><td style="color:#888;padding:1px 6px 1px 0;">Max same-params repeats</td><td style="color:#c00;font-weight:bold;">{{ data.sameParamsRepeats }}</td></tr>
+            {% endif %}
+            {% if data.allParamsIdentical is defined and data.allParamsIdentical %}
+                <tr><td colspan="2" style="color:#c00;font-size:0.9em;">All executions used identical params</td></tr>
+            {% endif %}
+            {% if data.avgMs is defined %}
+            <tr><td style="color:#888;padding:1px 6px 1px 0;">Avg / Min / Max ms</td><td>{{ data.avgMs }} / {{ data.minMs }} / {{ data.maxMs }}</td></tr>
+            {% endif %}
+            {% if data.totalMs is defined %}
+            <tr><td style="color:#888;padding:1px 6px 1px 0;">Total ms (this request)</td><td>{{ data.totalMs }}</td></tr>
+            {% endif %}
+            {% if data.explainPlan is defined and data.explainPlan %}
+                {% set plan = data.explainPlan %}
+                <tr><td colspan="2" style="padding-top:4px;color:#888;border-top:1px solid #eee;">EXPLAIN</td></tr>
+                {% if plan.nodeType is defined %}
+                <tr><td style="color:#888;padding:1px 6px 1px 0;">Node type</td>
+                    <td style="{% if plan.scanType == 'seq_scan' %}color:#c00;font-weight:bold;{% endif %}">{{ plan.nodeType }}</td></tr>
+                {% endif %}
+                {% if plan.totalCost is defined %}
+                <tr><td style="color:#888;padding:1px 6px 1px 0;">Planner cost</td><td>{{ plan.totalCost }}</td></tr>
+                {% endif %}
+                {% if plan.planRows is defined %}
+                <tr><td style="color:#888;padding:1px 6px 1px 0;">Plan rows</td><td>{{ plan.planRows }}</td></tr>
+                {% endif %}
+                {% if plan.indexesUsed is defined and plan.indexesUsed|length > 0 %}
+                    <tr><td style="color:#888;padding:1px 6px 1px 0;">Indexes used</td>
+                        <td style="color:#060;">{{ plan.indexesUsed|join(', ') }}</td></tr>
+                {% endif %}
+                {% if plan.indexCond is defined and plan.indexCond %}
+                <tr><td style="color:#888;padding:1px 6px 1px 0;">Index cond</td><td style="font-family:monospace;font-size:0.9em;">{{ plan.indexCond }}</td></tr>
+                {% endif %}
+                {% if plan.filterCond is defined and plan.filterCond %}
+                <tr><td style="color:#888;padding:1px 6px 1px 0;">Filter</td><td style="font-family:monospace;font-size:0.9em;">{{ plan.filterCond }}</td></tr>
+                {% endif %}
+                {% if plan.allNodeTypes is defined and plan.allNodeTypes|length > 0 %}
+                    <tr><td style="color:#888;padding:1px 6px 1px 0;">All nodes</td><td>{{ plan.allNodeTypes|join(' -> ') }}</td></tr>
+                {% endif %}
+            {% endif %}
+        </table>
+    </details>
+{% endif %}

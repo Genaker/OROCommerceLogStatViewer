@@ -1,0 +1,11 @@
+{% set worstSlowMs = record.getValue('worstSlowMs') %}
+{% if record.getValue('isSlow') and worstSlowMs %}
+    {% if worstSlowMs < 1000 %}
+        {% set label = worstSlowMs|round(1) ~ ' ms' %}
+    {% else %}
+        {% set label = (worstSlowMs / 1000)|round(2) ~ ' s' %}
+    {% endif %}
+    <span class="badge" style="background-color:#e67e22;color:#fff;padding:3px 7px;border-radius:3px;white-space:nowrap;">
+        SLOW ({{ label }})
+    </span>
+{% endif %}

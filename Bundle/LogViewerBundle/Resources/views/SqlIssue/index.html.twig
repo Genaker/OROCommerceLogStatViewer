@@ -1,0 +1,24 @@
+{% extends '@OroUI/actions/index.html.twig' %}
+
+{% import '@OroDataGrid/macros.html.twig' as dataGrid %}
+
+{% set pageTitle = 'SQL Issue Tracker' %}
+
+{% block page_title %}SQL Issue Tracker — N+1 &amp; Slow Queries{% endblock %}
+
+{% block content %}
+    {{ parent() }}
+    <div class="container-fluid">
+        <div class="row" style="margin-bottom: 10px;">
+            <div class="col-md-12">
+                <form method="post" action="{{ path('genaker_sql_issue_clear_all') }}"
+                      onsubmit="return confirm('Clear all SQL issue records?');">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fa fa-trash"></i> Clear All
+                    </button>
+                </form>
+            </div>
+        </div>
+        {{ dataGrid.renderGrid('genaker_sql_issue_grid', {}) }}
+    </div>
+{% endblock %}

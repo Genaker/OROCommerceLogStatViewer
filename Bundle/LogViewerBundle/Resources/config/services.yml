@@ -1,0 +1,136 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Genaker\Bundle\LogViewerBundle\Service\LogFileValidator:
+        arguments:
+            $logDir: '%kernel.project_dir%/var/logs'
+
+    Genaker\Bundle\LogViewerBundle\Service\LogFileReader:
+        arguments:
+            $logDir: '%kernel.project_dir%/var/logs'
+
+    Genaker\Bundle\LogViewerBundle\EventListener\LogFileGridListener:
+        tags:
+            - { name: kernel.event_listener, event: 'oro_datagrid.datagrid.build.after', method: onBuildAfter }
+
+    Genaker\Bundle\LogViewerBundle\Service\LogViewerAjaxService:
+        arguments:
+            $reader: '@Genaker\Bundle\LogViewerBundle\Service\LogFileReader'
+
+    Genaker\Bundle\LogViewerBundle\Controller\LogViewerController:
+        public: true
+        autoconfigure: false
+        arguments:
+            - '@Genaker\Bundle\LogViewerBundle\Service\LogFileReader'
+            - '@Genaker\Bundle\LogViewerBundle\Service\LogFileValidator'
+            - '@Genaker\Bundle\LogViewerBundle\Service\LogViewerAjaxService'
+            - '@oro_config.manager'
+            - '@translator'
+            - '%kernel.environment%'
+            - '@twig'
+        tags: ['controller.service_arguments']
+
+    Genaker\Bundle\LogViewerBundle\Service\ServerMetricsCollector:
+        public: true
+
+    Genaker\Bundle\LogViewerBundle\Service\PerfDashboardConfig:
+        public: true
+
+    Genaker\Bundle\LogViewerBundle\Service\PerfDashboardStore:
+        public: true
+
+    Genaker\Bundle\LogViewerBundle\Repository\HttpPerformanceRepository:
+        arguments:
+            $registry: '@doctrine'
+
+    Genaker\Bundle\LogViewerBundle\Service\HttpPerformanceRecorder:
+        public: true
+        autowire: true
+        arguments:
+            $doctrine: '@doctrine'
+            $config: '@Genaker\Bundle\LogViewerBundle\Service\PerfDashboardConfig'
+
+    Genaker\Bundle\LogViewerBundle\EventListener\PerfReportListener:
+        arguments:
+            $perfRecorder: '@Genaker\Bundle\LogViewerBundle\Service\HttpPerformanceRecorder'
+            $logger: '@logger'
+        tags:
+            - { name: kernel.event_listener, event: kernel.terminate, method: onKernelTerminate }
+
+    Genaker\Bundle\LogViewerBundle\EventListener\ConsolePerformanceListener:
+        arguments:
+            $recorder: '@Genaker\Bundle\LogViewerBundle\Service\HttpPerformanceRecorder'
+        tags:
+            - { name: kernel.event_listener, event: console.command,   method: onConsoleCommand }
+            - { name: kernel.event_listener, event: console.terminate, method: onConsoleTerminate }
+
+    Genaker\Bundle\LogViewerBundle\Consumption\PerfMqReportExtension:
+        arguments:
+            $perfRecorder: '@Genaker\Bundle\LogViewerBundle\Service\HttpPerformanceRecorder'
+            $logger: '@logger'
+        tags:
+            - { name: oro_message_queue.consumption.extension }
+
+    Genaker\Bundle\LogViewerBundle\Controller\PerfDashboardController:
+        public: true
+        autoconfigure: false
+        tags:
+            - 'controller.service_arguments'
+            - 'container.service_subscriber'
+
+    Genaker\Bundle\LogViewerBundle\Controller\HttpPerformanceController:
+        public: true
+        autoconfigure: false
+        tags:
+            - 'controller.service_arguments'
+            - 'container.service_subscriber'
+
+    Genaker\Bundle\LogViewerBundle\Repository\SqlIssueRepository:
+        arguments:
+            $registry: '@doctrine'
+
+    Genaker\Bundle\LogViewerBundle\Service\SqlQueryCollector:
+        public: true
+
+    Genaker\Bundle\LogViewerBundle\Service\SqlExplainRunner:
+        public: true
+        arguments:
+            $connection: '@doctrine.dbal.default_connection'
+
+    Genaker\Bundle\LogViewerBundle\Service\SqlAiAnalyzer:
+        public: true
+        arguments:
+            $config: '@Genaker\Bundle\LogViewerBundle\Service\PerfDashboardConfig'
+
+    Genaker\Bundle\LogViewerBundle\Service\SqlPerformanceRecorder:
+        public: true
+        arguments:
+            $connection: '@doctrine.dbal.default_connection'
+            $config: '@Genaker\Bundle\LogViewerBundle\Service\PerfDashboardConfig'
+            $explainRunner: '@Genaker\Bundle\LogViewerBundle\Service\SqlExplainRunner'
+            $aiAnalyzer:   '@Genaker\Bundle\LogViewerBundle\Service\SqlAiAnalyzer'
+
+    Genaker\Bundle\LogViewerBundle\EventListener\SqlPerformanceListener:
+        arguments:
+            $collector: '@Genaker\Bundle\LogViewerBundle\Service\SqlQueryCollector'
+            $recorder:  '@Genaker\Bundle\LogViewerBundle\Service\SqlPerformanceRecorder'
+            $connection: '@doctrine.dbal.default_connection'
+            $config:    '@Genaker\Bundle\LogViewerBundle\Service\PerfDashboardConfig'
+        tags:
+            - { name: kernel.event_listener, event: kernel.request,    method: onKernelRequest }
+            - { name: kernel.event_listener, event: kernel.terminate,  method: onKernelTerminate }
+            - { name: kernel.event_listener, event: console.terminate, method: onConsoleTerminate }
+
+    Genaker\Bundle\LogViewerBundle\Controller\SqlIssueController:
+        public: true
+        autoconfigure: false
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $connection:    '@doctrine.dbal.default_connection'
+            $aiAnalyzer:    '@Genaker\Bundle\LogViewerBundle\Service\SqlAiAnalyzer'
+        tags:
+            - 'controller.service_arguments'
+            - 'container.service_subscriber'

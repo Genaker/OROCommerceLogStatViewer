@@ -1,0 +1,7 @@
+{% set lastParams = record.getValue('lastParams') %}
+{% if lastParams %}
+    <details style="max-width:400px;" onclick="event.stopPropagation()">
+        <summary style="cursor:pointer;color:#555;font-size:0.85em;">params</summary>
+        <pre style="font-size:0.8em;white-space:pre-wrap;word-break:break-all;margin-top:4px;background:#f8f8f8;padding:6px;border-radius:3px;">{{ lastParams|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+    </details>
+{% endif %}

@@ -1,0 +1,672 @@
+/* Log Viewer — view page (terminal shell) styles */
+
+/* ── Download button spinner ────────────────────────────────── */
+@keyframes lv-spin { to { transform: rotate(360deg); } }
+.lv-spinning { display: inline-block; animation: lv-spin .7s linear infinite; }
+#btn-download.downloading { opacity: .75; pointer-events: none; }
+
+/* ── Log Viewer Shell ─────────────────────────────────────────── */
+.lv-shell {
+    background: linear-gradient(160deg, #0f1117 0%, #141922 100%);
+    border-radius: 12px;
+    padding: 0;
+    margin: 16px 0;
+    box-shadow: 0 8px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(88,166,255,.08);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Title Bar ─────────────────────────────────────────────────── */
+.lv-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 18px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    user-select: none;
+}
+
+.lv-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.lv-dot-r { background: #ff5f57; box-shadow: 0 0 6px #ff5f57aa; transition: transform .15s, box-shadow .15s; }
+.lv-dot-r:hover { transform: scale(1.25); box-shadow: 0 0 10px #ff5f57cc; }
+.lv-dot-y { background: #febc2e; box-shadow: 0 0 6px #febc2eaa; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.lv-dot-y:hover { transform: scale(1.25); box-shadow: 0 0 10px #febc2ecc; }
+.lv-dot-g { background: #28c840; box-shadow: 0 0 6px #28c840aa; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.lv-dot-g:hover { transform: scale(1.25); box-shadow: 0 0 10px #28c840cc; }
+
+/* Minimized state */
+.lv-shell.lv-minimized > *:not(.lv-titlebar) { display: none !important; }
+.lv-shell.lv-minimized { border-radius: 12px; }
+
+/* Fullscreen state */
+.lv-shell.lv-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    z-index: 99999 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex;
+    flex-direction: column;
+}
+.lv-shell.lv-fullscreen #log-content {
+    flex: 1;
+    height: auto !important;
+    max-height: none !important;
+    resize: none !important;
+}
+
+.lv-filename {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    font-family: 'Consolas', monospace;
+    color: #9eaabd;
+    letter-spacing: .04em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#live-indicator {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,.06);
+    color: #5a6275;
+    transition: color .3s, background .3s, box-shadow .3s;
+    white-space: nowrap;
+}
+#live-indicator.live-ok   { color: #28c840; background: rgba(40,200,64,.12); box-shadow: 0 0 8px rgba(40,200,64,.3); }
+#live-indicator.live-err  { color: #ff5f57; background: rgba(255,95,87,.12); box-shadow: 0 0 8px rgba(255,95,87,.3); }
+#live-indicator.live-idle { color: #febc2e; background: rgba(254,188,46,.10); box-shadow: 0 0 6px rgba(254,188,46,.25); }
+#live-indicator.live-sleep { color: #5a6275; background: rgba(255,255,255,.05); }
+
+/* ── Toolbar ────────────────────────────────────────────────────── */
+.lv-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.lv-toolbar + .lv-toolbar { border-top: none; }
+
+.lv-sep {
+    width: 1px;
+    height: 22px;
+    background: rgba(255,255,255,.1);
+    flex-shrink: 0;
+    margin: 0 2px;
+}
+
+.lv-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #5a6e8a;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    white-space: nowrap;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+.lv-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.07);
+    color: #9eaabd;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+    white-space: nowrap;
+    line-height: 1;
+    text-decoration: none;
+}
+.lv-btn:hover {
+    background: rgba(255,255,255,.13);
+    color: #dde6f0;
+    border-color: rgba(255,255,255,.22);
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    text-decoration: none;
+}
+.lv-btn.active,
+.lv-btn:active {
+    background: rgba(88,166,255,.18);
+    color: #58a6ff;
+    border-color: rgba(88,166,255,.4);
+    box-shadow: 0 0 10px rgba(88,166,255,.2);
+}
+.lv-btn-primary {
+    background: linear-gradient(135deg, #1a6fd4 0%, #0f52a8 100%);
+    border-color: #2a7ee0;
+    color: #e8f2ff;
+    box-shadow: 0 2px 8px rgba(26,111,212,.35);
+}
+.lv-btn-primary:hover {
+    background: linear-gradient(135deg, #2a7fe4 0%, #1762c0 100%);
+    color: #fff;
+    border-color: #4090ee;
+    box-shadow: 0 4px 14px rgba(26,111,212,.5);
+}
+.lv-btn-danger.active,
+.lv-btn-danger {
+    background: rgba(255,95,87,.15);
+    color: #ff7b75;
+    border-color: rgba(255,95,87,.35);
+}
+.lv-btn-danger:hover { background: rgba(255,95,87,.25); }
+.lv-btn-warn.active,
+.lv-btn-warn {
+    background: rgba(254,188,46,.12);
+    color: #febc2e;
+    border-color: rgba(254,188,46,.3);
+}
+.lv-btn-warn:hover { background: rgba(254,188,46,.2); }
+
+/* ── Inputs ─────────────────────────────────────────────────────── */
+.lv-input {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    color: #c9d6e3;
+    font-size: 12px;
+    padding: 5px 10px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+.lv-input:focus {
+    border-color: rgba(88,166,255,.7);
+    box-shadow: 0 0 0 3px rgba(88,166,255,.18);
+    background: rgba(255,255,255,.18);
+    color: #e8f2ff;
+}
+.lv-input::placeholder { color: #445060; }
+.lv-input-sm { width: 70px; }
+.lv-input-md { width: 90px; }
+.lv-input-lg { width: 230px; }
+input[type=number].lv-input { -moz-appearance: textfield; appearance: textfield; }
+input[type=number].lv-input::-webkit-inner-spin-button { opacity: .4; }
+
+/* ── Filter match badge ─────────────────────────────────────────── */
+.lv-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    background: rgba(88,166,255,.15);
+    color: #58a6ff;
+    border: 1px solid rgba(88,166,255,.25);
+}
+.lv-badge-warn {
+    background: rgba(254,188,46,.12);
+    color: #febc2e;
+    border-color: rgba(254,188,46,.25);
+}
+
+/* ── Level Quick-Filter Buttons ─────────────────────────────────── */
+.lv-level-btn { font-weight: 600; font-size: 11px; letter-spacing: .04em; }
+.lv-level-btn[data-level="DEBUG"]    { color: #7a8fa6; border-color: #7a8fa6; }
+.lv-level-btn[data-level="INFO"]     { color: #58a6ff; border-color: #58a6ff; }
+.lv-level-btn[data-level="WARNING"]  { color: #febc2e; border-color: #febc2e; }
+.lv-level-btn[data-level="ERROR"]    { color: #ff7b75; border-color: #ff7b75; }
+.lv-level-btn[data-level="CRITICAL"] { color: #d2a8ff; border-color: #d2a8ff; }
+.lv-level-btn.lv-level-active[data-level="DEBUG"]    { background: rgba(122,143,166,.18); box-shadow: 0 0 0 2px #7a8fa6; }
+.lv-level-btn.lv-level-active[data-level="INFO"]     { background: rgba(88,166,255,.18);  box-shadow: 0 0 0 2px #58a6ff; }
+.lv-level-btn.lv-level-active[data-level="WARNING"]  { background: rgba(254,188,46,.18);  box-shadow: 0 0 0 2px #febc2e; }
+.lv-level-btn.lv-level-active[data-level="ERROR"]    { background: rgba(255,123,117,.18); box-shadow: 0 0 0 2px #ff7b75; }
+.lv-level-btn.lv-level-active[data-level="CRITICAL"] { background: rgba(210,168,255,.18); box-shadow: 0 0 0 2px #d2a8ff; }
+
+.lv-light .lv-level-btn[data-level="DEBUG"]    { color: #4a5568; border-color: #4a5568; }
+.lv-light .lv-level-btn[data-level="INFO"]     { color: #1a56db; border-color: #1a56db; }
+.lv-light .lv-level-btn[data-level="WARNING"]  { color: #9a6700; border-color: #9a6700; }
+.lv-light .lv-level-btn[data-level="ERROR"]    { color: #b91c1c; border-color: #b91c1c; }
+.lv-light .lv-level-btn[data-level="CRITICAL"] { color: #7e22ce; border-color: #7e22ce; }
+.lv-light .lv-level-btn.lv-level-active[data-level="DEBUG"]    { background: rgba(74,85,104,.12);  box-shadow: 0 0 0 2px #4a5568; }
+.lv-light .lv-level-btn.lv-level-active[data-level="INFO"]     { background: rgba(26,86,219,.12);  box-shadow: 0 0 0 2px #1a56db; }
+.lv-light .lv-level-btn.lv-level-active[data-level="WARNING"]  { background: rgba(154,103,0,.12);  box-shadow: 0 0 0 2px #9a6700; }
+.lv-light .lv-level-btn.lv-level-active[data-level="ERROR"]    { background: rgba(185,28,28,.12);  box-shadow: 0 0 0 2px #b91c1c; }
+.lv-light .lv-level-btn.lv-level-active[data-level="CRITICAL"] { background: rgba(126,34,206,.12); box-shadow: 0 0 0 2px #7e22ce; }
+
+/* ── Textarea ───────────────────────────────────────────────────── */
+.lv-content-wrap {
+    position: relative;
+    padding: 0 16px 0;
+}
+#log-content {
+    display: block;
+    width: 100%;
+    height: 640px;
+    font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: pre;
+    resize: vertical;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: #080c12;
+    color: #c9d6e3;
+    outline: none;
+    box-shadow: inset 0 2px 12px rgba(0,0,0,.4);
+    transition: border-color .2s, box-shadow .2s;
+    margin-top: 12px;
+    box-sizing: border-box;
+}
+#log-content:focus {
+    border-color: rgba(88,166,255,.3);
+    box-shadow: inset 0 2px 12px rgba(0,0,0,.4), 0 0 0 3px rgba(88,166,255,.08);
+}
+
+/* ── Light Theme ────────────────────────────────────────────────── */
+.lv-shell.light-mode {
+    background: linear-gradient(160deg, #f0f4fa 0%, #e8edf5 100%);
+    box-shadow: 0 8px 40px rgba(0,0,0,.18), 0 0 0 1px rgba(0,100,200,.1);
+}
+.lv-shell.light-mode .lv-titlebar {
+    background: rgba(0,0,0,.04);
+    border-bottom-color: rgba(0,0,0,.1);
+}
+.lv-shell.light-mode .lv-filename,
+.lv-shell.light-mode .lv-title-path { color: #2c3e5a; }
+.lv-shell.light-mode .lv-toolbar {
+    background: rgba(0,0,0,.025);
+    border-bottom-color: rgba(0,0,0,.07);
+}
+.lv-shell.light-mode .lv-btn {
+    background: rgba(0,0,0,.07);
+    color: #1e2d42;
+    border-color: rgba(0,0,0,.15);
+}
+.lv-shell.light-mode .lv-btn:hover {
+    background: rgba(0,0,0,.13);
+    border-color: rgba(0,0,0,.25);
+}
+.lv-shell.light-mode .lv-btn-primary {
+    background: #1a73e8;
+    color: #fff;
+    border-color: #1a73e8;
+}
+.lv-shell.light-mode .lv-btn-primary:hover { background: #1558c0; }
+.lv-shell.light-mode .lv-btn-danger {
+    background: #d93025;
+    color: #fff;
+    border-color: #d93025;
+}
+.lv-shell.light-mode .lv-btn-warn {
+    background: #f29900;
+    color: #fff;
+    border-color: #f29900;
+}
+.lv-shell.light-mode .lv-input {
+    background: rgba(255,255,255,.75);
+    color: #1e2533;
+    border-color: rgba(0,0,0,.18);
+}
+.lv-shell.light-mode .lv-input::placeholder { color: #8a9ab5; }
+.lv-shell.light-mode .lv-input:focus {
+    background: #fff;
+    border-color: rgba(26,115,232,.7);
+    box-shadow: 0 0 0 3px rgba(26,115,232,.15);
+    color: #1e2533;
+}
+.lv-shell.light-mode #log-content {
+    background: #f7f9fc;
+    color: #1e2533;
+    border-color: rgba(0,0,0,.12);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,.06);
+}
+.lv-shell.light-mode #log-stats {
+    border-color: rgba(0,0,0,.1);
+    background: rgba(0,0,0,.03);
+}
+.lv-shell.light-mode .lv-stat {
+    border-right-color: rgba(0,0,0,.1);
+}
+.lv-shell.light-mode .lv-stat-label { color: #6b7a96; }
+.lv-shell.light-mode .lv-stat-value { color: #1e2d42; }
+.lv-shell.light-mode .lv-hint-box {
+    background: #fff;
+    border-color: rgba(0,0,0,.15);
+    color: #2c3e5a;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+}
+.lv-shell.light-mode input[type=checkbox] { accent-color: #1a73e8; }
+.lv-shell.light-mode label { color: #3a4a64; }
+
+/* ── Stats Bar ──────────────────────────────────────────────────── */
+#log-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 10px 16px 14px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.03);
+}
+.lv-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 16px;
+    border-right: 1px solid rgba(255,255,255,.07);
+    flex: 1;
+    min-width: 100px;
+}
+.lv-stat:last-child { border-right: none; }
+.lv-stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #3f5470;
+}
+.lv-stat-value {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Consolas', monospace;
+    color: #7eb8f7;
+    white-space: nowrap;
+}
+.lv-stat-value.green { color: #3fb950; }
+.lv-stat-value.amber { color: #d29922; }
+
+/* ── Grep active badge ──────────────────────────────────────────── */
+.lv-grep-active {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(254,188,46,.1);
+    border: 1px solid rgba(254,188,46,.25);
+    color: #febc2e;
+}
+
+/* ── Tooltip ────────────────────────────────────────────────────── */
+.lv-hint {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+.lv-hint-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: rgba(88,166,255,.15);
+    border: 1px solid rgba(88,166,255,.25);
+    color: #58a6ff;
+    font-size: 9px;
+    font-weight: 700;
+    font-style: normal;
+    cursor: default;
+    user-select: none;
+    flex-shrink: 0;
+    transition: background .15s;
+    line-height: 1;
+}
+.lv-hint-icon:hover { background: rgba(88,166,255,.3); }
+.lv-hint-box {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 220px;
+    max-width: 300px;
+    padding: 10px 13px;
+    background: #1a2233;
+    border: 1px solid rgba(88,166,255,.25);
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.6);
+    font-size: 11px;
+    line-height: 1.55;
+    color: #a8bdd4;
+    z-index: 9999;
+    pointer-events: none;
+    white-space: normal;
+}
+.lv-hint-box::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: rgba(88,166,255,.25);
+}
+.lv-hint-box strong {
+    display: block;
+    color: #c9d6e3;
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+.lv-hint:hover .lv-hint-box,
+.lv-hint-icon:focus + .lv-hint-box {
+    display: block;
+}
+
+/* ── Exception Aggregation Panel ─────────────────────────────── */
+#lv-exceptions-panel {
+    margin: 0 16px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,123,117,.2);
+    background: rgba(8,10,18,.7);
+    overflow: hidden;
+}
+.lv-exc-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(255,123,117,.07);
+    border-bottom: 1px solid rgba(255,123,117,.15);
+    font-size: 11px;
+    font-weight: 700;
+    color: #ff7b75;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.lv-exc-header .lv-exc-count-total { color: #5a6e8a; font-weight: 400; }
+.lv-exc-body { max-height: 240px; overflow-y: auto; padding: 4px 0; }
+.lv-exc-row {
+    display: grid;
+    grid-template-columns: 46px minmax(120px,160px) 1fr 140px 140px 28px;
+    gap: 8px;
+    align-items: center;
+    padding: 5px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.03);
+    font-size: 11px;
+}
+.lv-exc-row:hover { background: rgba(255,255,255,.025); }
+.lv-exc-count {
+    font-weight: 700;
+    color: #5a6e8a;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.lv-exc-count-mid  { color: #febc2e; }
+.lv-exc-count-high { color: #ff7b75; }
+.lv-exc-class { color: #ff9b75; font-family: monospace; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-exc-msg   { color: #7a8fa6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-exc-time  { color: #3f5470; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lv-exc-empty,
+.lv-exc-error { display: block; padding: 14px; font-size: 12px; color: #5a6e8a; }
+.lv-exc-error { color: #ff7b75; }
+
+/* Level badges inside the Unique Entries panel */
+.lv-exc-level-error { color: #ff7b75; }
+.lv-exc-level-warn  { color: #febc2e; }
+.lv-exc-level-info  { color: #58a6ff; }
+
+/* ── Level count pills in the title bar ───────────────────── */
+.lv-level-count {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.lv-level-count-error { background: rgba(255,95,87,.15);  color: #ff7b75; border: 1px solid rgba(255,95,87,.3); }
+.lv-level-count-warn  { background: rgba(254,188,46,.12); color: #febc2e; border: 1px solid rgba(254,188,46,.25); }
+.lv-level-count-info  { background: rgba(88,166,255,.12); color: #58a6ff; border: 1px solid rgba(88,166,255,.2); }
+
+/* ── Error spike badge ────────────────────────────────────── */
+@keyframes lv-spike-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,95,87,.5); }
+    50%       { box-shadow: 0 0 0 6px rgba(255,95,87,0); }
+}
+.lv-spike-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255,95,87,.2);
+    color: #ff5f57;
+    border: 1px solid rgba(255,95,87,.45);
+    animation: lv-spike-pulse 1.3s ease-in-out infinite;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Copy-to-clipboard button inside aggregator rows ──────── */
+.lv-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: rgba(255,255,255,.05);
+    color: #5a6e8a;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+}
+.lv-copy-btn:hover { background: rgba(88,166,255,.15); color: #58a6ff; border-color: rgba(88,166,255,.3); }
+
+/* ── Throughput Panel ────────────────────────────────────────── */
+#lv-throughput-panel {
+    margin: 0 16px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(88,166,255,.18);
+    background: rgba(8,10,18,.7);
+    overflow: hidden;
+}
+.lv-throughput-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(88,166,255,.06);
+    border-bottom: 1px solid rgba(88,166,255,.12);
+    font-size: 11px;
+    font-weight: 700;
+    color: #58a6ff;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.lv-throughput-body { padding: 12px 14px 8px; }
+.lv-throughput-meta { font-size: 10px; color: #3f5470; margin-bottom: 8px; }
+
+/* ── Split View ──────────────────────────────────────────────── */
+#lv-panes-container { display: block; }
+.lv-split-active #lv-panes-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+}
+#lv-main-pane { min-width: 0; }
+.lv-split-pane {
+    min-width: 0;
+    border-left: 1px solid rgba(255,255,255,.07);
+    display: flex;
+    flex-direction: column;
+}
+.lv-split-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.02);
+}
+.lv-split-textarea {
+    display: block;
+    width: 100%;
+    height: 640px;
+    font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre;
+    resize: vertical;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: #080c12;
+    color: #c9d6e3;
+    outline: none;
+    margin-top: 12px;
+    box-sizing: border-box;
+}
+.lv-split-active .lv-content-wrap #log-content { height: 480px; }
+.lv-split-active .lv-split-textarea { height: 480px; }
+.lv-split-stats {
+    font-size: 10px;
+    color: #3f5470;
+    padding: 6px 14px 10px;
+    font-variant-numeric: tabular-nums;
+}
+.lv-shell.light-mode .lv-split-pane   { border-left-color: rgba(0,0,0,.1); }
+.lv-shell.light-mode .lv-split-header { background: rgba(0,0,0,.03); border-bottom-color: rgba(0,0,0,.07); }
+.lv-shell.light-mode .lv-split-textarea { background: #f7f9fc; color: #1e2533; border-color: rgba(0,0,0,.12); }
+
+/* ── Multi-file panel ────────────────────────────────────────── */
+#lv-multi-panel { background: rgba(22,27,34,.98); border-bottom: 1px solid rgba(255,255,255,.07); padding: 12px 14px 0; }
+.lv-multi-header  { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.lv-multi-picker  { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.lv-multi-file-label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.lv-multi-file-badge { font-size: 11px; padding: 1px 8px; border-radius: 10px; border: 1px solid; white-space: nowrap; }
+.lv-multi-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.lv-multi-table-wrap { max-height: 420px; overflow-y: auto; border: 1px solid rgba(255,255,255,.08); border-radius: 4px; margin-bottom: 12px; }
+.lv-multi-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: monospace; }
+.lv-multi-table thead th { position: sticky; top: 0; background: #161b22; color: #8b949e; font-weight: 600; padding: 4px 8px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.lv-multi-table tbody tr:hover { background: rgba(255,255,255,.03); }
+.lv-multi-table td { padding: 2px 8px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
+.lv-mt-col-file { width: 160px; white-space: nowrap; }
+.lv-mt-col-line { color: #c9d1d9; word-break: break-all; }
+.lv-mt-badge { font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid; display: inline-block; }
+.lv-shell.light-mode #lv-multi-panel { background: rgba(247,249,252,.98); border-bottom-color: rgba(0,0,0,.1); }
+.lv-shell.light-mode .lv-multi-table { background: #fff; }
+.lv-shell.light-mode .lv-multi-table thead th { background: #f0f3f6; color: #444; border-bottom-color: rgba(0,0,0,.12); }
+.lv-shell.light-mode .lv-mt-col-line { color: #1e2533; }

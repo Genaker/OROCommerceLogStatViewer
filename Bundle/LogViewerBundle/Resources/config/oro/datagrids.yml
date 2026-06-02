@@ -1,0 +1,260 @@
+datagrids:
+    genaker_log_files_grid:
+        source:
+            type: array
+        columns:
+            file_name:
+                label:    'File Name'
+                type:     twig
+                template: '@GenakerLogViewer/LogViewer/datagrid/file_name.html.twig'
+                frontend_type: html
+            size:
+                label:     'Size (bytes)'
+                type:      field
+                data_name: size
+                frontend_type: integer
+            modified:
+                label:     'Last Modified'
+                type:      field
+                data_name: modified
+                frontend_type: string
+        sorters:
+            columns:
+                file_name:
+                    data_name: file_name
+                size:
+                    data_name: size
+                modified:
+                    data_name: modified
+            default:
+                modified: DESC
+        properties:
+            view_link:
+                type:   url
+                route:  genaker_log_viewer_view
+                params:
+                    fileName: file_name
+            download_link:
+                type:   url
+                route:  genaker_log_viewer_download
+                params:
+                    fileName: file_name
+            delete_link:
+                type:   url
+                route:  genaker_log_viewer_delete
+                params:
+                    fileName: file_name
+        actions:
+            view:
+                type:  navigate
+                label: 'View'
+                link:  view_link
+                icon:  eye
+            download:
+                type:           navigate
+                label:          'genaker.log_viewer.download_btn'
+                link:           download_link
+                icon:           download
+                acl_resource:   genaker_log_viewer_index
+            delete:
+                type:           delete
+                label:          'genaker.log_viewer.delete_btn'
+                link:           delete_link
+                icon:           trash
+                acl_resource:   genaker_log_viewer_index
+
+    genaker_http_performance_grid:
+        source:
+            type: orm
+            query:
+                select:
+                    - p.id
+                    - p.path
+                    - p.type
+                    - p.avgResponseMs
+                    - p.minResponseMs
+                    - p.maxResponseMs
+                    - p.requestCount
+                    - p.lastSeenAt
+                    - p.lastStatusCode
+                from:
+                    - { table: Genaker\Bundle\LogViewerBundle\Entity\HttpPerformance, alias: p }
+        columns:
+            path:
+                label:     'Path / Command / Topic'
+                data_name: path
+            type:
+                label:     'Type'
+                data_name: type
+            avgResponseMs:
+                label:         'Avg (ms)'
+                data_name:     avgResponseMs
+                frontend_type: decimal
+            minResponseMs:
+                label:         'Fastest (ms)'
+                data_name:     minResponseMs
+                frontend_type: decimal
+            maxResponseMs:
+                label:         'Slowest (ms)'
+                data_name:     maxResponseMs
+                frontend_type: decimal
+            requestCount:
+                label:         'Requests'
+                data_name:     requestCount
+                frontend_type: integer
+            lastSeenAt:
+                label:         'Last Seen'
+                data_name:     lastSeenAt
+                frontend_type: datetime
+            lastStatusCode:
+                label:         'Status'
+                data_name:     lastStatusCode
+                frontend_type: integer
+        sorters:
+            columns:
+                avgResponseMs:
+                    data_name: p.avgResponseMs
+                minResponseMs:
+                    data_name: p.minResponseMs
+                maxResponseMs:
+                    data_name: p.maxResponseMs
+                requestCount:
+                    data_name: p.requestCount
+                lastSeenAt:
+                    data_name: p.lastSeenAt
+                path:
+                    data_name: p.path
+            default:
+                avgResponseMs: DESC
+        filters:
+            columns:
+                type:
+                    type:      choice
+                    data_name: p.type
+                    options:
+                        field_options:
+                            choices:
+                                'HTTP': http
+                                'CLI':  cli
+                                'MQ':   mq
+                path:
+                    type:      string
+                    data_name: p.path
+        options:
+            export: false
+            mass_actions: []
+
+    genaker_sql_issue_grid:
+        source:
+            type: orm
+            query:
+                select:
+                    - s.id
+                    - s.sqlTemplate
+                    - s.isN1
+                    - s.isSlow
+                    - s.worstN1Count
+                    - s.worstSlowMs
+                    - s.occurrenceCount
+                    - s.lastSeenAt
+                    - s.lastCaller
+                    - s.lastParams
+                    - s.lastUrl
+                    - s.suggestion
+                    - s.analysisData
+                from:
+                    - { table: Genaker\Bundle\LogViewerBundle\Entity\SqlIssue, alias: s }
+        columns:
+            isN1:
+                label:         'N+1'
+                type:          twig
+                template:      '@GenakerLogViewer/SqlIssue/datagrid/is_n1.html.twig'
+                frontend_type: html
+                data_name:     isN1
+            isSlow:
+                label:         'Slow'
+                type:          twig
+                template:      '@GenakerLogViewer/SqlIssue/datagrid/is_slow.html.twig'
+                frontend_type: html
+                data_name:     isSlow
+            worstN1Count:
+                label:         'Worst N+1'
+                data_name:     worstN1Count
+                frontend_type: integer
+            worstSlowMs:
+                label:         'Worst Slow (ms)'
+                data_name:     worstSlowMs
+                frontend_type: decimal
+            occurrenceCount:
+                label:         'Occurrences'
+                data_name:     occurrenceCount
+                frontend_type: integer
+            lastSeenAt:
+                label:         'Last Seen'
+                data_name:     lastSeenAt
+                frontend_type: datetime
+            lastUrl:
+                label:     'Last URL'
+                data_name: lastUrl
+            lastCaller:
+                label:         'Caller'
+                type:          twig
+                template:      '@GenakerLogViewer/SqlIssue/datagrid/last_caller.html.twig'
+                frontend_type: html
+                data_name:     lastCaller
+            sqlTemplate:
+                label:         'SQL Template'
+                type:          twig
+                template:      '@GenakerLogViewer/SqlIssue/datagrid/sql_template.html.twig'
+                frontend_type: html
+                data_name:     sqlTemplate
+            lastParams:
+                label:         'Params'
+                type:          twig
+                template:      '@GenakerLogViewer/SqlIssue/datagrid/last_params.html.twig'
+                frontend_type: html
+                data_name:     lastParams
+            suggestion:
+                label:         'Suggestion'
+                type:          twig
+                template:      '@GenakerLogViewer/SqlIssue/datagrid/suggestion.html.twig'
+                frontend_type: html
+                data_name:     suggestion
+            aiPrompt:
+                label:         'AI Prompt'
+                type:          twig
+                template:      '@GenakerLogViewer/SqlIssue/datagrid/ai_prompt.html.twig'
+                frontend_type: html
+                data_name:     analysisData
+            analysisData:
+                label:         'Analysis'
+                type:          twig
+                template:      '@GenakerLogViewer/SqlIssue/datagrid/analysis_data.html.twig'
+                frontend_type: html
+                data_name:     analysisData
+        sorters:
+            columns:
+                worstSlowMs:
+                    data_name: s.worstSlowMs
+                worstN1Count:
+                    data_name: s.worstN1Count
+                occurrenceCount:
+                    data_name: s.occurrenceCount
+                lastSeenAt:
+                    data_name: s.lastSeenAt
+            default:
+                lastSeenAt: DESC
+        filters:
+            columns:
+                isN1:
+                    type:      boolean
+                    data_name: s.isN1
+                isSlow:
+                    type:      boolean
+                    data_name: s.isSlow
+                sqlTemplate:
+                    type:      string
+                    data_name: s.sqlTemplate
+        options:
+            export: false
+            mass_actions: []

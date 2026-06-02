@@ -1,0 +1,217 @@
+system_configuration:
+    fields:
+        genaker_log_viewer.enabled:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'Enable Log Viewer'
+                tooltip: 'Disable on production to prevent log file exposure.'
+            priority: 10
+
+        genaker_log_viewer.lines_per_page:
+            data_type: integer
+            type:      Symfony\Component\Form\Extension\Core\Type\IntegerType
+            ui_only:   true
+            options:
+                label: 'Default Lines Per Page'
+                attr:
+                    min: 10
+                    max: 1000
+            priority: 20
+
+        genaker_log_viewer.perf_dashboard_enabled:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'Enable Server Monitoring'
+                tooltip: 'Enable real-time server metrics collection and dashboard. Disable to reduce Redis load.'
+            priority: 30
+
+        genaker_log_viewer.perf_report_interval:
+            data_type: integer
+            type:      Symfony\Component\Form\Extension\Core\Type\IntegerType
+            ui_only:   true
+            options:
+                label: 'Metrics Report Interval (seconds)'
+                tooltip: 'How often each instance reports metrics to Redis. Lower = more frequent updates, higher Redis load.'
+                attr:
+                    min: 5
+                    max: 300
+            priority: 40
+
+        genaker_log_viewer.perf_http_reporting:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'HTTP Listener Reporting'
+                tooltip: 'Report metrics on kernel.terminate (after HTTP response sent). Recommended for web servers.'
+            priority: 50
+
+        genaker_log_viewer.perf_mq_reporting:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'Message Queue Reporting'
+                tooltip: 'Report metrics from RabbitMQ consumers. Recommended for background workers.'
+            priority: 60
+
+        genaker_log_viewer.perf_mq_trigger:
+            data_type: string
+            type:      Symfony\Component\Form\Extension\Core\Type\ChoiceType
+            ui_only:   true
+            options:
+                label: 'MQ Trigger Mode'
+                tooltip: 'When to report metrics from MQ consumers. "after" gives more frequent updates as it reports after each message.'
+                choices:
+                    'Before processing message': before
+                    'After processing message': after
+                    'Both before and after': both
+            priority: 70
+
+        genaker_log_viewer.http_perf_enabled:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'Enable Request Performance Tracking'
+                tooltip: 'Record per-path response times for HTTP, CLI and MQ into the database.'
+            priority: 80
+
+        genaker_log_viewer.http_perf_tracked_statuses:
+            data_type: string
+            type:      Symfony\Component\Form\Extension\Core\Type\TextType
+            ui_only:   true
+            options:
+                label:   'Tracked HTTP Status Codes'
+                tooltip: 'Comma-separated HTTP status codes to record (e.g. "200,201"). Leave empty to track all.'
+                attr:
+                    placeholder: '200'
+            priority: 90
+
+        genaker_log_viewer.http_perf_track_cli:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'Track CLI Commands'
+                tooltip: 'Record wall-clock time for each console command run.'
+            priority: 100
+
+        genaker_log_viewer.http_perf_track_mq:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'Track RabbitMQ Messages'
+                tooltip: 'Record processing time per MQ topic.'
+            priority: 110
+
+        genaker_log_viewer.http_perf_slow_threshold_ms:
+            data_type: integer
+            type:      Symfony\Component\Form\Extension\Core\Type\IntegerType
+            ui_only:   true
+            options:
+                label:   'HTTP Slow Request Threshold (ms, 0 = log all)'
+                tooltip: 'Only record HTTP/CLI/MQ requests slower than this threshold. 0 logs everything.'
+                attr:
+                    min: 0
+                    placeholder: '0'
+            priority: 115
+
+        genaker_log_viewer.sql_tracking_enabled:
+            data_type: boolean
+            type:      Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckboxType
+            ui_only:   true
+            options:
+                label:   'Enable SQL Issue Tracking (N+1 & slow queries)'
+                tooltip: 'Detect N+1 query patterns and slow queries per request. Zero DB overhead on clean requests.'
+            priority: 120
+
+        genaker_log_viewer.sql_n1_threshold:
+            data_type: integer
+            type:      Symfony\Component\Form\Extension\Core\Type\IntegerType
+            ui_only:   true
+            options:
+                label:   'N+1 Detection Threshold (min repeat count per request)'
+                tooltip: 'Flag a SQL template as N+1 when it is executed more than this many times in a single request.'
+                attr:
+                    min: 2
+                    placeholder: '5'
+            priority: 125
+
+        genaker_log_viewer.sql_slow_threshold_ms:
+            data_type: integer
+            type:      Symfony\Component\Form\Extension\Core\Type\IntegerType
+            ui_only:   true
+            options:
+                label:   'Slow Query Threshold (ms)'
+                tooltip: 'Flag a SQL execution as slow when it exceeds this duration.'
+                attr:
+                    min: 1
+                    placeholder: '10'
+            priority: 130
+
+        genaker_log_viewer.sql_ai_api_key:
+            data_type: string
+            type:      Symfony\Component\Form\Extension\Core\Type\PasswordType
+            ui_only:   true
+            options:
+                label:   'AI Analysis API Key (OpenAI / compatible)'
+                tooltip: 'OpenAI API key (sk-...). Leave empty to disable AI-powered SQL recommendations. The key is stored in the database configuration.'
+                attr:
+                    placeholder: 'sk-...'
+                    autocomplete: 'off'
+            priority: 135
+
+        genaker_log_viewer.sql_ai_api_url:
+            data_type: string
+            type:      Symfony\Component\Form\Extension\Core\Type\TextType
+            ui_only:   true
+            options:
+                label:   'AI API URL'
+                tooltip: 'Override to use Azure OpenAI, local Ollama, or any OpenAI-compatible endpoint. Leave empty for the default OpenAI chat completions URL.'
+                attr:
+                    placeholder: 'https://api.openai.com/v1/chat/completions'
+            priority: 140
+
+        genaker_log_viewer.sql_ai_model:
+            data_type: string
+            type:      Symfony\Component\Form\Extension\Core\Type\TextType
+            ui_only:   true
+            options:
+                label:   'AI Model'
+                tooltip: 'Model name to use for SQL analysis (e.g. gpt-4o-mini, gpt-4o, claude-3-haiku). Leave empty for the default (gpt-4o-mini).'
+                attr:
+                    placeholder: 'gpt-4o-mini'
+            priority: 145
+
+    tree:
+        system_configuration:
+            platform:
+                children:
+                    genaker_log_viewer_group:
+                        priority: 200
+                        label:    'Log Viewer & Monitoring'
+                        children:
+                            genaker_log_viewer.enabled: ~
+                            genaker_log_viewer.lines_per_page: ~
+                            genaker_log_viewer.perf_dashboard_enabled: ~
+                            genaker_log_viewer.perf_report_interval: ~
+                            genaker_log_viewer.perf_http_reporting: ~
+                            genaker_log_viewer.perf_mq_reporting: ~
+                            genaker_log_viewer.perf_mq_trigger: ~
+                            genaker_log_viewer.http_perf_enabled: ~
+                            genaker_log_viewer.http_perf_tracked_statuses: ~
+                            genaker_log_viewer.http_perf_track_cli: ~
+                            genaker_log_viewer.http_perf_track_mq: ~
+                            genaker_log_viewer.http_perf_slow_threshold_ms: ~
+                            genaker_log_viewer.sql_tracking_enabled: ~
+                            genaker_log_viewer.sql_n1_threshold: ~
+                            genaker_log_viewer.sql_slow_threshold_ms: ~
+                            genaker_log_viewer.sql_ai_api_key: ~
+                            genaker_log_viewer.sql_ai_api_url: ~
+                            genaker_log_viewer.sql_ai_model: ~

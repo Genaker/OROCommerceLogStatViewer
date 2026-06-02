@@ -1,0 +1,33 @@
+genaker:
+  logviewer:
+    sqlissue:
+      entity_label:        'SQL Issue'
+      entity_plural_label: 'SQL Issues'
+      id.label:            'ID'
+      sql_template.label:  'SQL Template'
+      is_n1.label:         'N+1 Query'
+      is_slow.label:       'Slow Query'
+      worst_n1_count.label: 'Worst N+1 Count'
+      worst_slow_ms.label:  'Worst Slow (ms)'
+      occurrence_count.label: 'Occurrences'
+      last_seen_at.label:  'Last Seen'
+      last_caller.label:   'Caller'
+      last_params.label:   'Parameters'
+      last_url.label:      'Last URL'
+      suggestion.label:    'Suggestion'
+      analysis_data.label: 'Analysis'
+  log_viewer:
+    title: Log Files
+    disabled_message: Log Viewer is disabled.
+    lines_label: Lines
+    apply_btn: Apply
+    toggle_wrap_btn: Toggle Wrap
+    live_update_status: 'Live update: every 3 s'
+    download_btn: Download
+    back_to_list: Back to Log Files
+    delete_btn: Delete
+    delete_confirm: 'Delete log file %s?'
+    delete_msg: 'Log file "%s" has been deleted.'
+    download_error: 'Could not download log file "%s".'
+    delete_error: 'Could not delete log file "%s".'
+    file_error: 'Log file "%s" not found or is not readable.'

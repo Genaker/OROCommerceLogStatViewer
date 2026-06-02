@@ -1,0 +1,20 @@
+oro_config:
+    genaker_log_viewer:
+        perf_dashboard_enabled:
+            value: true
+        perf_report_interval:
+            value: 60
+        perf_http_reporting:
+            value: true
+        perf_mq_reporting:
+            value: true
+        perf_mq_trigger:
+            value: 'after'
+        http_perf_enabled:
+            value: true
+        http_perf_tracked_statuses:
+            value: '200'
+        http_perf_track_cli:
+            value: true
+        http_perf_track_mq:
+            value: true
