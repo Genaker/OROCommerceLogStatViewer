@@ -1,0 +1,38 @@
+genaker.comivoyager.acl.action.optimize.label: 'Optimize Delivery Routes (ComiVoyager)'
+
+genaker.comivoyager.system_configuration.groups.comivoyager_settings.title: ComiVoyager Route Optimizer
+
+genaker.comivoyager.system_configuration.fields.distance_provider.label: Distance Provider
+genaker.comivoyager.system_configuration.fields.distance_provider.tooltip: Method used to calculate distances between stops.
+genaker.comivoyager.system_configuration.fields.distance_provider.choices.haversine: Haversine (great-circle, default)
+genaker.comivoyager.system_configuration.fields.distance_provider.choices.vincenty: Vincenty (ellipsoidal)
+genaker.comivoyager.system_configuration.fields.distance_provider.choices.osrm: OSRM (road distance)
+genaker.comivoyager.system_configuration.fields.distance_provider.choices.google: Google Distance Matrix
+genaker.comivoyager.system_configuration.fields.distance_provider.choices.postgis: PostGIS
+
+genaker.comivoyager.system_configuration.fields.geocoder.label: Geocoder
+genaker.comivoyager.system_configuration.fields.geocoder.tooltip: Service used to resolve text addresses into coordinates.
+genaker.comivoyager.system_configuration.fields.geocoder.choices.nominatim: Nominatim (OpenStreetMap, default)
+genaker.comivoyager.system_configuration.fields.geocoder.choices.google: Google Geocoding
+
+genaker.comivoyager.system_configuration.fields.osrm_base_url.label: OSRM Base URL
+genaker.comivoyager.system_configuration.fields.osrm_base_url.tooltip: Base URL of the OSRM routing server used for the OSRM distance provider.
+
+genaker.comivoyager.system_configuration.fields.google_api_key.label: Google API Key
+genaker.comivoyager.system_configuration.fields.google_api_key.tooltip: API key used for the Google Geocoding and Distance Matrix services.
+
+genaker.comivoyager.system_configuration.fields.default_route_count.label: Default Route Count
+genaker.comivoyager.system_configuration.fields.default_route_count.tooltip: Default number of ranked routes returned when not specified explicitly.
+
+genaker.comivoyager.system_configuration.fields.enable_geocode_cache.label: Enable Geocode Cache
+genaker.comivoyager.system_configuration.fields.enable_geocode_cache.tooltip: Cache geocoding results in the database to reduce calls to external providers.
+
+genaker.comivoyager.system_configuration.fields.geocode_cache_ttl_days.label: Geocode Cache TTL (days)
+genaker.comivoyager.system_configuration.fields.geocode_cache_ttl_days.tooltip: Number of days a cached geocoding result remains valid.
+
+genaker.comivoyager.system_configuration.fields.max_addresses.label: Maximum Addresses Per Request
+genaker.comivoyager.system_configuration.fields.max_addresses.tooltip: Maximum number of addresses accepted in a single optimization request. Requests exceeding this limit are rejected with an error. Up to 9 addresses, all returned routes are provably optimal; above 9 the solver switches to faster approximate strategies for the ranked alternatives.
+
+genaker.comivoyager.system_configuration.test_connection.button: Test Connection
+genaker.comivoyager.system_configuration.test_connection.testing: Testing...
+genaker.comivoyager.system_configuration.test_connection.error: Could not test the connection. Please try again.

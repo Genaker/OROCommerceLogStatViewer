@@ -1,0 +1,489 @@
+{% extends '@OroUI/actions/index.html.twig' %}
+
+{% set pageTitle = 'Database Log Viewer' %}
+
+{% block page_title %}Database Log Viewer{% endblock %}
+
+{% block navButtons %}
+    <form method="post" action="{{ path('genaker_log_entry_clear_all') }}"
+          onsubmit="return confirm('Delete ALL log entries from the database?');"
+          style="display:inline;">
+        <button type="submit" class="btn btn-danger btn-sm">
+            <i class="fa fa-trash"></i> Clear All
+        </button>
+    </form>
+{% endblock %}
+
+{% block content %}
+{{ parent() }}
+
+<style>
+.dbl-shell { font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; font-size: 12px; background: #1e1e2e; color: #cdd6f4; border-radius: 10px; padding: 0; overflow: hidden; margin: 10px 0; display: flex; flex-direction: column; max-height: 85vh; }
+.dbl-titlebar { background: #313244; padding: 8px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #45475a; }
+.dbl-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.dbl-dot-r { background: #f38ba8; } .dbl-dot-y { background: #f9e2af; } .dbl-dot-g { background: #a6e3a1; }
+.dbl-title { color: #bac2de; font-size: 13px; font-weight: 600; }
+.dbl-toolbar { background: #181825; padding: 8px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #313244; }
+.dbl-label { color: #6c7086; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.dbl-select, .dbl-input { background: #313244; border: 1px solid #45475a; color: #cdd6f4; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-family: inherit; }
+.dbl-select:focus, .dbl-input:focus { border-color: #89b4fa; outline: none; }
+.dbl-btn { background: #313244; border: 1px solid #45475a; color: #cdd6f4; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: inherit; }
+.dbl-btn:hover { background: #45475a; }
+.dbl-btn-primary { background: #89b4fa; color: #1e1e2e; border-color: #89b4fa; }
+.dbl-btn-primary:hover { background: #74c7ec; }
+.dbl-btn-danger { background: #f38ba8; color: #1e1e2e; border-color: #f38ba8; }
+.dbl-sep { width: 1px; height: 20px; background: #45475a; margin: 0 4px; }
+.dbl-log-wrap { flex: 1; overflow: auto; min-height: 0; }
+.dbl-table { width: 100%; border-collapse: collapse; }
+.dbl-table th { background: #313244; color: #bac2de; padding: 6px 10px; text-align: left; font-size: 11px; text-transform: uppercase; position: sticky; top: 0; z-index: 1; border-bottom: 2px solid #45475a; }
+.dbl-table td { padding: 4px 10px; border-bottom: 1px solid #313244; vertical-align: top; max-width: 600px; overflow-wrap: break-word; }
+.dbl-table tr:hover { background: #313244; }
+.dbl-level { padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.dbl-level-debug { background: #45475a; color: #a6adc8; }
+.dbl-level-info { background: #1e66f5; color: #fff; }
+.dbl-level-notice { background: #04a5e5; color: #fff; }
+.dbl-level-warning { background: #df8e1d; color: #1e1e2e; }
+.dbl-level-error { background: #d20f39; color: #fff; }
+.dbl-level-critical { background: #d20f39; color: #fff; font-size: 11px; }
+.dbl-level-alert { background: #e64553; color: #fff; }
+.dbl-level-emergency { background: #e64553; color: #fff; animation: dbl-blink 1s infinite; }
+@keyframes dbl-blink { 50% { opacity: .6; } }
+.dbl-expandable { cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbl-expandable.dbl-expanded { white-space: pre-wrap; overflow: visible; text-overflow: unset; }
+.dbl-msg { word-break: break-word; }
+.dbl-context { color: #6c7086; font-size: 11px; }
+.dbl-live { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.dbl-live-on { background: #a6e3a1; animation: dbl-pulse 2s infinite; }
+.dbl-live-off { background: #f38ba8; }
+@keyframes dbl-pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+.dbl-stats { background: #181825; padding: 6px 16px; color: #6c7086; font-size: 11px; display: flex; gap: 16px; border-top: 1px solid #313244; }
+.dbl-table th { position: relative; cursor: pointer; user-select: none; border-right: 1px solid #45475a; }
+.dbl-table th:last-child { border-right: none; }
+.dbl-table th .dbl-resize { position: absolute; right: -2px; top: 0; bottom: 0; width: 5px; cursor: col-resize; background: transparent; z-index: 2; }
+.dbl-table th .dbl-resize:hover, .dbl-table th .dbl-resize.dbl-resizing { background: #89b4fa; }
+.dbl-table { table-layout: fixed; }
+.dbl-table td, .dbl-table th { overflow: hidden; text-overflow: ellipsis; }
+.dbl-table td { border-right: 1px solid #2a2a3a; }
+.dbl-table td:last-child { border-right: none; }
+.dbl-sort-asc::after { content: ' \25B2'; font-size: 9px; color: #89b4fa; }
+.dbl-sort-desc::after { content: ' \25BC'; font-size: 9px; color: #89b4fa; }
+
+.dbl-light .dbl-shell { background: #f8f9fa; color: #1e1e2e; }
+.dbl-light .dbl-titlebar { background: #e9ecef; border-bottom-color: #dee2e6; }
+.dbl-light .dbl-title { color: #495057; }
+.dbl-light .dbl-toolbar { background: #f1f3f5; border-bottom-color: #dee2e6; }
+.dbl-light .dbl-label { color: #868e96; }
+.dbl-light .dbl-select, .dbl-light .dbl-input { background: #fff; border-color: #ced4da; color: #212529; }
+.dbl-light .dbl-select:focus, .dbl-light .dbl-input:focus { border-color: #228be6; }
+.dbl-light .dbl-btn { background: #e9ecef; border-color: #ced4da; color: #212529; }
+.dbl-light .dbl-btn:hover { background: #dee2e6; }
+.dbl-light .dbl-btn-primary { background: #228be6; color: #fff; border-color: #228be6; }
+.dbl-light .dbl-btn-primary:hover { background: #1c7ed6; }
+.dbl-light .dbl-btn-danger { background: #fa5252; color: #fff; border-color: #fa5252; }
+.dbl-light .dbl-sep { background: #dee2e6; }
+.dbl-light .dbl-table th { background: #e9ecef; color: #495057; border-bottom-color: #ced4da; }
+.dbl-light .dbl-table td { border-bottom-color: #e9ecef; color: #212529; }
+.dbl-light .dbl-table tr:hover { background: #e9ecef; }
+.dbl-light .dbl-msg { color: #212529; }
+.dbl-light .dbl-context { color: #868e96; }
+.dbl-light .dbl-stats { background: #f1f3f5; color: #868e96; border-top-color: #dee2e6; }
+.dbl-light .dbl-log-wrap { background: #fff; }
+.dbl-light .dbl-level-debug { background: #e9ecef; color: #495057; }
+.dbl-light .dbl-level-info { background: #228be6; }
+.dbl-light .dbl-level-notice { background: #15aabf; }
+.dbl-light .dbl-level-warning { background: #fab005; color: #212529; }
+.dbl-light .dbl-level-error { background: #fa5252; }
+.dbl-light .dbl-level-critical { background: #e03131; }
+.dbl-light .dbl-level-alert { background: #c92a2a; }
+.dbl-light .dbl-level-emergency { background: #c92a2a; }
+.dbl-light .dbl-resize:hover, .dbl-light .dbl-resize.dbl-resizing { background: #228be6; }
+.dbl-light .dbl-table th { border-right-color: #ced4da; }
+.dbl-light .dbl-table td { border-right-color: #e9ecef; }
+.dbl-light .dbl-sort-asc::after, .dbl-light .dbl-sort-desc::after { color: #228be6; }
+</style>
+
+<div class="dbl-shell" id="dbl-root">
+    <div class="dbl-titlebar">
+        <span class="dbl-dot dbl-dot-r"></span>
+        <span class="dbl-dot dbl-dot-y"></span>
+        <span class="dbl-dot dbl-dot-g"></span>
+        <span class="dbl-title">genaker_log_entry — Database Log Tail</span>
+        <span style="margin-left:auto;">
+            <span class="dbl-live dbl-live-off" id="dbl-live-dot"></span>
+            <span id="dbl-live-label" style="color:#6c7086;">Paused</span>
+        </span>
+    </div>
+
+    <div class="dbl-toolbar">
+        <span class="dbl-label">Level</span>
+        <select class="dbl-select" id="dbl-level">
+            <option value="">All</option>
+            <option value="DEBUG">DEBUG</option>
+            <option value="INFO">INFO</option>
+            <option value="NOTICE">NOTICE</option>
+            <option value="WARNING">WARNING</option>
+            <option value="ERROR">ERROR</option>
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="ALERT">ALERT</option>
+            <option value="EMERGENCY">EMERGENCY</option>
+        </select>
+        <span class="dbl-sep"></span>
+        <span class="dbl-label">Channel</span>
+        <select class="dbl-select" id="dbl-channel">
+            <option value="">All</option>
+        </select>
+        <span class="dbl-sep"></span>
+        <span class="dbl-label">Search</span>
+        <input type="text" class="dbl-input" id="dbl-search" placeholder="message contains..." style="width:200px;">
+        <span class="dbl-sep"></span>
+        <span class="dbl-label">Rows</span>
+        <input type="number" class="dbl-input" id="dbl-limit" value="100" min="10" max="500" style="width:60px;">
+        <span class="dbl-sep"></span>
+        <button class="dbl-btn dbl-btn-primary" id="dbl-btn-load">Load</button>
+        <button class="dbl-btn" id="dbl-btn-live">&#9654; Live Tail</button>
+        <button class="dbl-btn" id="dbl-btn-pause" style="display:none;">&#9646;&#9646; Pause</button>
+        <button class="dbl-btn dbl-btn-danger" id="dbl-btn-clear" style="display:none;">&#x2715; Clear View</button>
+        <span class="dbl-sep"></span>
+        <button class="dbl-btn" id="dbl-btn-theme">&#9788; Light</button>
+    </div>
+
+    <div class="dbl-log-wrap" id="dbl-log-wrap">
+        <table class="dbl-table">
+            <thead>
+                <tr>
+                    <th data-sort="id" data-type="num" style="width:50px;">ID<span class="dbl-resize"></span></th>
+                    <th data-sort="created_at" data-type="str" style="width:140px;">Time<span class="dbl-resize"></span></th>
+                    <th data-sort="level" data-type="num" style="width:70px;">Level<span class="dbl-resize"></span></th>
+                    <th data-sort="occurrence_count" data-type="num" style="width:50px;">Count<span class="dbl-resize"></span></th>
+                    <th data-sort="channel" data-type="str" style="width:90px;">Channel<span class="dbl-resize"></span></th>
+                    <th data-sort="message" data-type="str" style="width:400px;">Message<span class="dbl-resize"></span></th>
+                    <th style="width:200px;">Context<span class="dbl-resize"></span></th>
+                    <th data-sort="url" data-type="str" style="width:180px;">URL<span class="dbl-resize"></span></th>
+                    <th data-sort="ip" data-type="str" style="width:100px;">IP</th>
+                </tr>
+            </thead>
+            <tbody id="dbl-tbody"></tbody>
+        </table>
+    </div>
+
+    <div class="dbl-stats">
+        <span>Shown: <strong id="dbl-stat-rows">0</strong></span>
+        <span>DB Rows: <strong id="dbl-stat-db-rows">—</strong></span>
+        <span>Total Events: <strong id="dbl-stat-occurrences">—</strong></span>
+        <span>Table Size: <strong id="dbl-stat-size">—</strong></span>
+        <span>Grouped: <strong id="dbl-stat-grouped">—</strong></span>
+        <span>Last refresh: <strong id="dbl-stat-time">—</strong></span>
+        <span>Max ID: <strong id="dbl-stat-max-id">0</strong></span>
+    </div>
+</div>
+
+<script>
+(function(){
+    var tailUrl     = '{{ path("genaker_log_entry_tail") }}';
+    var channelsUrl = '{{ path("genaker_log_entry_channels") }}';
+    var statsUrl    = '{{ path("genaker_log_entry_stats") }}';
+    var csrfToken   = '{{ csrf_token("") }}';
+    var fetchOpts   = {headers: {'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest'}, credentials: 'same-origin'};
+    var tbody       = document.getElementById('dbl-tbody');
+    var wrap        = document.getElementById('dbl-log-wrap');
+    var liveDot     = document.getElementById('dbl-live-dot');
+    var liveLabel   = document.getElementById('dbl-live-label');
+    var statRows    = document.getElementById('dbl-stat-rows');
+    var allRows     = [];
+    var sortCol     = null;
+    var sortDir     = 'desc';
+    var statTime    = document.getElementById('dbl-stat-time');
+    var statMaxId   = document.getElementById('dbl-stat-max-id');
+    var btnLive     = document.getElementById('dbl-btn-live');
+    var btnPause    = document.getElementById('dbl-btn-pause');
+    var btnClear    = document.getElementById('dbl-btn-clear');
+    var btnLoad     = document.getElementById('dbl-btn-load');
+    var maxId       = 0;
+    var liveTimer   = null;
+
+    function esc(s) {
+        var d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+    }
+
+    function levelClass(name) {
+        return 'dbl-level dbl-level-' + (name || 'debug').toLowerCase();
+    }
+
+    var ctxTrimLen = {{ oro_config_value('genaker_log_viewer.db_log_context_trim_length') is not null ? oro_config_value('genaker_log_viewer.db_log_context_trim_length') : 100 }};
+
+    function formatCtx(obj) {
+        if (!obj || Object.keys(obj).length === 0) return '<span style="color:#45475a;">—</span>';
+        var full;
+        try { full = JSON.stringify(obj, null, 2); } catch(e) { full = String(obj); }
+        if (ctxTrimLen > 0 && full.length > ctxTrimLen) {
+            return esc(full.substring(0, ctxTrimLen)) + '<span style="color:#585b70;">…</span>';
+        }
+        return esc(full);
+    }
+
+    function formatCtxFull(obj) {
+        if (!obj || Object.keys(obj).length === 0) return '<span style="color:#45475a;">—</span>';
+        try { return esc(JSON.stringify(obj, null, 2)); } catch(e) { return esc(String(obj)); }
+    }
+
+    function renderCount(cnt) {
+        var n = parseInt(cnt, 10) || 1;
+        if (n <= 1) return '<span style="color:#45475a;">1</span>';
+        var color = n > 100 ? '#f38ba8' : n > 10 ? '#fab005' : '#a6e3a1';
+        return '<span style="color:' + color + ';font-weight:700;">' + n.toLocaleString() + '</span>';
+    }
+
+    function renderTime(r) {
+        var last = esc(r.created_at || '');
+        var cnt = parseInt(r.occurrence_count, 10) || 1;
+        if (cnt <= 1 || !r.first_seen_at) return '<span style="color:#a6adc8;">' + last + '</span>';
+        var first = esc(r.first_seen_at);
+        return '<span style="color:#a6adc8;" title="First: ' + first + '">' + last + '</span>' +
+               '<br><span style="color:#585b70;font-size:10px;">first: ' + first + '</span>';
+    }
+
+    function renderRow(r) {
+        var tr = document.createElement('tr');
+
+        var ctxShort = formatCtx(r.context);
+        var ctxFullHtml = formatCtxFull(r.context);
+        var hasCtxMore = ctxShort !== ctxFullHtml;
+
+        tr.innerHTML =
+            '<td style="color:#6c7086;">' + esc(String(r.id)) + '</td>' +
+            '<td>' + renderTime(r) + '</td>' +
+            '<td><span class="' + levelClass(r.level_name) + '">' + esc(r.level_name || '') + '</span></td>' +
+            '<td>' + renderCount(r.occurrence_count) + '</td>' +
+            '<td style="color:#94e2d5;">' + esc(r.channel || '') + '</td>' +
+            '<td class="dbl-msg dbl-expandable" data-full="' + esc(r.message || '').replace(/"/g, '&quot;') + '">' + esc(r.message || '') + '</td>' +
+            '<td class="dbl-context dbl-expandable"' +
+                (hasCtxMore ? ' data-short="' + ctxShort.replace(/"/g, '&quot;') + '" data-full="' + ctxFullHtml.replace(/"/g, '&quot;') + '"' : '') +
+                '>' + ctxShort + '</td>' +
+            '<td class="dbl-expandable" style="color:#6c7086;">' + esc(r.url || '') + '</td>' +
+            '<td style="color:#6c7086;">' + esc(r.ip || '') + '</td>';
+
+        tr.querySelectorAll('.dbl-expandable').forEach(function(td) {
+            td.addEventListener('click', function() {
+                td.classList.toggle('dbl-expanded');
+                if (td.dataset.short && td.dataset.full) {
+                    td.innerHTML = td.classList.contains('dbl-expanded') ? td.dataset.full : td.dataset.short;
+                }
+            });
+        });
+
+        return tr;
+    }
+
+    function getParams(afterId) {
+        var p = '?limit=' + (document.getElementById('dbl-limit').value || 100);
+        var lvl = document.getElementById('dbl-level').value;
+        var ch  = document.getElementById('dbl-channel').value;
+        var sr  = document.getElementById('dbl-search').value;
+        if (afterId) p += '&after_id=' + afterId;
+        if (lvl) p += '&level=' + encodeURIComponent(lvl);
+        if (ch)  p += '&channel=' + encodeURIComponent(ch);
+        if (sr)  p += '&search=' + encodeURIComponent(sr);
+        return p;
+    }
+
+    function renderAllRows() {
+        tbody.innerHTML = '';
+        allRows.forEach(function(r) { tbody.appendChild(renderRow(r)); });
+        statRows.textContent = allRows.length;
+    }
+
+    function sortRows(col, type) {
+        var ths = document.querySelectorAll('.dbl-table th[data-sort]');
+        ths.forEach(function(th) { th.classList.remove('dbl-sort-asc', 'dbl-sort-desc'); });
+
+        if (sortCol === col) {
+            sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortCol = col;
+            sortDir = 'asc';
+        }
+
+        var th = document.querySelector('.dbl-table th[data-sort="' + col + '"]');
+        if (th) th.classList.add(sortDir === 'asc' ? 'dbl-sort-asc' : 'dbl-sort-desc');
+
+        allRows.sort(function(a, b) {
+            var va = a[col], vb = b[col];
+            if (va == null) va = '';
+            if (vb == null) vb = '';
+            if (type === 'num') {
+                va = parseFloat(va) || 0;
+                vb = parseFloat(vb) || 0;
+            } else {
+                va = String(va).toLowerCase();
+                vb = String(vb).toLowerCase();
+            }
+            if (va < vb) return sortDir === 'asc' ? -1 : 1;
+            if (va > vb) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+        renderAllRows();
+    }
+
+    function load(afterId) {
+        fetch(tailUrl + getParams(afterId), fetchOpts)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var rows = data.rows || [];
+                if (!afterId) {
+                    allRows = rows;
+                } else {
+                    rows.forEach(function(r) { allRows.unshift(r); });
+                }
+                rows.forEach(function(r) {
+                    var rid = parseInt(r.id, 10);
+                    if (rid > maxId) maxId = rid;
+                });
+                if (sortCol) {
+                    var sth = document.querySelector('.dbl-table th[data-sort="' + sortCol + '"]');
+                    var stype = sth ? (sth.getAttribute('data-type') || 'str') : 'str';
+                    allRows.sort(function(a, b) {
+                        var va = a[sortCol], vb = b[sortCol];
+                        if (va == null) va = '';
+                        if (vb == null) vb = '';
+                        if (stype === 'num') { va = parseFloat(va) || 0; vb = parseFloat(vb) || 0; }
+                        else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+                        if (va < vb) return sortDir === 'asc' ? -1 : 1;
+                        if (va > vb) return sortDir === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+                renderAllRows();
+                statTime.textContent = new Date().toLocaleTimeString();
+                statMaxId.textContent = maxId;
+                loadStats();
+                if (!afterId) wrap.scrollTop = 0;
+            })
+            .catch(function(e) { console.error('[DB Log] fetch error', e); });
+    }
+
+    function startLive() {
+        if (liveTimer) return;
+        liveDot.className = 'dbl-live dbl-live-on';
+        liveLabel.textContent = 'Live';
+        btnLive.style.display = 'none';
+        btnPause.style.display = '';
+        btnClear.style.display = '';
+        sortCol = 'created_at';
+        sortDir = 'desc';
+        var th = document.querySelector('.dbl-table th[data-sort="created_at"]');
+        document.querySelectorAll('.dbl-table th[data-sort]').forEach(function(h) { h.classList.remove('dbl-sort-asc', 'dbl-sort-desc'); });
+        if (th) th.classList.add('dbl-sort-desc');
+        liveTimer = setInterval(function() { load(maxId); }, 3000);
+        load(maxId);
+    }
+
+    function stopLive() {
+        if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+        liveDot.className = 'dbl-live dbl-live-off';
+        liveLabel.textContent = 'Paused';
+        btnLive.style.display = '';
+        btnPause.style.display = 'none';
+    }
+
+    btnLoad.addEventListener('click', function() { maxId = 0; load(0); });
+    btnLive.addEventListener('click', startLive);
+    btnPause.addEventListener('click', stopLive);
+    btnClear.addEventListener('click', function() { tbody.innerHTML = ''; statRows.textContent = '0'; });
+
+    // table stats
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        var units = ['B', 'KB', 'MB', 'GB'];
+        var i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+    }
+    function loadStats() {
+        fetch(statsUrl, fetchOpts)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                document.getElementById('dbl-stat-db-rows').textContent = (d.total_rows || 0).toLocaleString();
+                document.getElementById('dbl-stat-size').textContent = formatBytes(d.table_size_bytes || 0);
+                document.getElementById('dbl-stat-grouped').textContent = (d.grouped_rows || 0).toLocaleString();
+                document.getElementById('dbl-stat-occurrences').textContent = (d.total_occurrences || 0).toLocaleString();
+            })
+            .catch(function() {});
+    }
+    loadStats();
+
+    // load channels
+    fetch(channelsUrl, fetchOpts)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var sel = document.getElementById('dbl-channel');
+            (data.channels || []).forEach(function(ch) {
+                var o = document.createElement('option');
+                o.value = ch; o.textContent = ch;
+                sel.appendChild(o);
+            });
+        });
+
+    // theme toggle
+    var btnTheme = document.getElementById('dbl-btn-theme');
+    var root = document.getElementById('dbl-root');
+    var isLight = localStorage.getItem('dbl-theme') === 'light';
+    function applyTheme() {
+        if (isLight) {
+            root.parentElement.classList.add('dbl-light');
+            btnTheme.innerHTML = '&#9790; Dark';
+        } else {
+            root.parentElement.classList.remove('dbl-light');
+            btnTheme.innerHTML = '&#9788; Light';
+        }
+    }
+    applyTheme();
+    btnTheme.addEventListener('click', function() {
+        isLight = !isLight;
+        localStorage.setItem('dbl-theme', isLight ? 'light' : 'dark');
+        applyTheme();
+    });
+
+    // column sort
+    document.querySelectorAll('.dbl-table th[data-sort]').forEach(function(th) {
+        th.addEventListener('click', function(e) {
+            if (e.target.classList.contains('dbl-resize')) return;
+            sortRows(th.getAttribute('data-sort'), th.getAttribute('data-type') || 'str');
+        });
+    });
+
+    // column resize
+    (function() {
+        var handles = document.querySelectorAll('.dbl-resize');
+        var col, startX, startW;
+        handles.forEach(function(handle) {
+            handle.addEventListener('mousedown', function(e) {
+                col = handle.parentElement;
+                startX = e.pageX;
+                startW = col.offsetWidth;
+                handle.classList.add('dbl-resizing');
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+                e.preventDefault();
+            });
+        });
+        function onMove(e) {
+            if (!col) return;
+            var w = Math.max(30, startW + (e.pageX - startX));
+            col.style.width = w + 'px';
+        }
+        function onUp() {
+            if (col) {
+                var h = col.querySelector('.dbl-resize');
+                if (h) h.classList.remove('dbl-resizing');
+            }
+            col = null;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        }
+    })();
+
+    // initial load
+    load(0);
+})();
+</script>
+
+{% endblock %}

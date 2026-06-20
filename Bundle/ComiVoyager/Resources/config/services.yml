@@ -1,0 +1,54 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Genaker\Bundle\ComiVoyager\Core\Distance\HaversineDistanceMatrixProvider:
+    tags: ['genaker_comivoyager.distance_provider']
+
+  Genaker\Bundle\ComiVoyager\Core\Distance\VincentyDistanceMatrixProvider:
+    tags: ['genaker_comivoyager.distance_provider']
+
+  Genaker\Bundle\ComiVoyager\Distance\OsrmDistanceMatrixProvider:
+    tags: ['genaker_comivoyager.distance_provider']
+
+  Genaker\Bundle\ComiVoyager\Distance\GoogleDistanceMatrixProvider:
+    tags: ['genaker_comivoyager.distance_provider']
+
+  Genaker\Bundle\ComiVoyager\Distance\PostgisDistanceMatrixProvider:
+    arguments:
+      $connection: '@doctrine.dbal.comivoyager_postgis_connection'
+    tags: ['genaker_comivoyager.distance_provider']
+
+  Genaker\Bundle\ComiVoyager\Distance\DistanceProviderRegistry:
+    arguments:
+      $providers: !tagged_iterator genaker_comivoyager.distance_provider
+
+  Genaker\Bundle\ComiVoyager\Geocoder\NominatimGeocoder:
+    tags: ['genaker_comivoyager.geocoder']
+
+  Genaker\Bundle\ComiVoyager\Geocoder\GoogleGeocoder:
+    tags: ['genaker_comivoyager.geocoder']
+
+  Genaker\Bundle\ComiVoyager\Geocoder\GeocoderRegistry:
+    arguments:
+      $geocoders: !tagged_iterator genaker_comivoyager.geocoder
+
+  Genaker\Bundle\ComiVoyager\Service\RouteOptimizationService: ~
+
+  Genaker\Bundle\ComiVoyager\Service\ConnectionTesterService:
+    arguments:
+      $crypter: '@oro_security.encoder.default'
+
+  Genaker\Bundle\ComiVoyager\Controller\RouteOptimizationController:
+    public: true
+    tags: ['controller.service_arguments']
+
+  Genaker\Bundle\ComiVoyager\Controller\ConnectionTestController:
+    public: true
+    tags: ['controller.service_arguments']
+
+  Genaker\Bundle\ComiVoyager\Command\OptimizeRouteCommand:
+    arguments:
+      $distanceProviders: !tagged_iterator genaker_comivoyager.distance_provider

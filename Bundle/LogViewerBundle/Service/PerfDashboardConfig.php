@@ -29,6 +29,19 @@ class PerfDashboardConfig
     private const string KEY_SQL_AI_API_KEY   = 'genaker_log_viewer.sql_ai_api_key';
     private const string KEY_SQL_AI_API_URL   = 'genaker_log_viewer.sql_ai_api_url';
     private const string KEY_SQL_AI_MODEL     = 'genaker_log_viewer.sql_ai_model';
+    private const string KEY_BROWSER_CONSOLE      = 'genaker_log_viewer.browser_console_enabled';
+    private const string KEY_BROWSER_MAX_ENTRIES  = 'genaker_log_viewer.browser_console_max_entries';
+    private const string KEY_BROWSER_MAX_SIZE_KB  = 'genaker_log_viewer.browser_console_max_size_kb';
+    private const string KEY_DB_LOG_ENABLED       = 'genaker_log_viewer.db_log_enabled';
+    private const string KEY_DB_LOG_LEVEL         = 'genaker_log_viewer.db_log_level';
+    private const string KEY_DB_LOG_RETENTION     = 'genaker_log_viewer.db_log_retention_hours';
+    private const string KEY_DB_LOG_WRITE_MODE    = 'genaker_log_viewer.db_log_write_mode';
+    private const string KEY_DB_LOG_CHANNELS      = 'genaker_log_viewer.db_log_channels';
+    private const string KEY_DB_LOG_MAX_SIZE_MB   = 'genaker_log_viewer.db_log_max_size_mb';
+    private const string KEY_DB_LOG_TRUNCATE_MIN  = 'genaker_log_viewer.db_log_truncate_interval_min';
+    private const string KEY_DB_LOG_GROUPING      = 'genaker_log_viewer.db_log_grouping_enabled';
+    private const string KEY_DB_LOG_GROUPING_LEN  = 'genaker_log_viewer.db_log_grouping_key_length';
+    private const string KEY_DB_LOG_CTX_TRIM      = 'genaker_log_viewer.db_log_context_trim_length';
 
     private const int DEFAULT_INTERVAL = 60;
 
@@ -160,5 +173,98 @@ class PerfDashboardConfig
     public function getSqlAiModel(): string
     {
         return (string) ($this->configManager->get(self::KEY_SQL_AI_MODEL) ?? '');
+    }
+
+    public function isBrowserConsoleEnabled(): bool
+    {
+        $value = $this->configManager->get(self::KEY_BROWSER_CONSOLE);
+
+        return $value === null ? true : (bool) $value;
+    }
+
+    public function getBrowserConsoleMaxEntries(): int
+    {
+        $value = $this->configManager->get(self::KEY_BROWSER_MAX_ENTRIES);
+
+        return max(1, (int) ($value ?? 200));
+    }
+
+    public function getBrowserConsoleMaxSizeKb(): int
+    {
+        $value = $this->configManager->get(self::KEY_BROWSER_MAX_SIZE_KB);
+
+        return max(1, (int) ($value ?? 1024));
+    }
+
+    public function isDbLogEnabled(): bool
+    {
+        $value = $this->configManager->get(self::KEY_DB_LOG_ENABLED);
+
+        return $value === null ? false : (bool) $value;
+    }
+
+    public function getDbLogLevel(): string
+    {
+        return (string) ($this->configManager->get(self::KEY_DB_LOG_LEVEL) ?? 'WARNING');
+    }
+
+    public function getDbLogRetentionHours(): int
+    {
+        $value = $this->configManager->get(self::KEY_DB_LOG_RETENTION);
+
+        return max(1, (int) ($value ?? 24));
+    }
+
+    public function getDbLogWriteMode(): string
+    {
+        $value = $this->configManager->get(self::KEY_DB_LOG_WRITE_MODE);
+
+        return in_array($value, ['deferred', 'immediate'], true) ? $value : 'deferred';
+    }
+
+    /** @return string[] */
+    public function getDbLogChannels(): array
+    {
+        $raw = (string) ($this->configManager->get(self::KEY_DB_LOG_CHANNELS) ?? '');
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $raw))));
+    }
+
+    public function getDbLogMaxSizeMb(): int
+    {
+        $value = $this->configManager->get(self::KEY_DB_LOG_MAX_SIZE_MB);
+
+        return max(1, (int) ($value ?? 500));
+    }
+
+    public function getDbLogTruncateIntervalMin(): int
+    {
+        $value = $this->configManager->get(self::KEY_DB_LOG_TRUNCATE_MIN);
+
+        return max(1, (int) ($value ?? 15));
+    }
+
+    public function isDbLogGroupingEnabled(): bool
+    {
+        $value = $this->configManager->get(self::KEY_DB_LOG_GROUPING);
+
+        return $value === null ? true : (bool) $value;
+    }
+
+    public function getDbLogGroupingKeyLength(): int
+    {
+        $value = $this->configManager->get(self::KEY_DB_LOG_GROUPING_LEN);
+
+        return max(10, min(255, (int) ($value ?? 30)));
+    }
+
+    public function getDbLogContextTrimLength(): int
+    {
+        $value = $this->configManager->get(self::KEY_DB_LOG_CTX_TRIM);
+
+        return max(0, (int) ($value ?? 100));
     }
 }

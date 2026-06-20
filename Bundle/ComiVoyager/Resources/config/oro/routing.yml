@@ -1,0 +1,15 @@
+genaker_comivoyager_optimize:
+    path: /comivoyager/optimize
+    methods: [POST]
+    defaults:
+        _controller: 'Genaker\Bundle\ComiVoyager\Controller\RouteOptimizationController::optimizeAction'
+    options:
+        frontend: true
+
+genaker_comivoyager_test_connection:
+    path: /comivoyager/admin/test-connection/{provider}
+    methods: [POST]
+    defaults:
+        _controller: 'Genaker\Bundle\ComiVoyager\Controller\ConnectionTestController::testAction'
+    requirements:
+        provider: 'osrm|google'

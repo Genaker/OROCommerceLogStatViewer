@@ -28,3 +28,9 @@ acls:
         label:      'View SQL Issue Tracker'
         group_name: ''
         category:   ''
+
+    genaker_log_entry_index:
+        type:       action
+        label:      'View Database Logs'
+        group_name: ''
+        category:   ''

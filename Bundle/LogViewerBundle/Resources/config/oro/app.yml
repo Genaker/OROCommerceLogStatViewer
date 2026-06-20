@@ -18,3 +18,29 @@ oro_config:
             value: true
         http_perf_track_mq:
             value: true
+        browser_console_enabled:
+            value: true
+        browser_console_max_entries:
+            value: 200
+        browser_console_max_size_kb:
+            value: 1024
+        db_log_enabled:
+            value: false
+        db_log_level:
+            value: 'WARNING'
+        db_log_retention_hours:
+            value: 24
+        db_log_write_mode:
+            value: 'deferred'
+        db_log_channels:
+            value: ''
+        db_log_max_size_mb:
+            value: 500
+        db_log_truncate_interval_min:
+            value: 15
+        db_log_grouping_enabled:
+            value: true
+        db_log_grouping_key_length:
+            value: 30
+        db_log_context_trim_length:
+            value: 100

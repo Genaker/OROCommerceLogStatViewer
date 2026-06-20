@@ -1,0 +1,145 @@
+system_configuration:
+    groups:
+        comivoyager_settings:
+            title: genaker.comivoyager.system_configuration.groups.comivoyager_settings.title
+            icon: fa-road
+            priority: 100
+        comivoyager_general:
+            title: genaker.comivoyager.system_configuration.groups.comivoyager_settings.title
+            priority: 100
+
+    fields:
+        genaker_comi_voyager.distance_provider:
+            data_type: string
+            type: Symfony\Component\Form\Extension\Core\Type\ChoiceType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.distance_provider.label
+                tooltip: genaker.comivoyager.system_configuration.fields.distance_provider.tooltip
+                choices:
+                    genaker.comivoyager.system_configuration.fields.distance_provider.choices.haversine: haversine
+                    genaker.comivoyager.system_configuration.fields.distance_provider.choices.vincenty: vincenty
+                    genaker.comivoyager.system_configuration.fields.distance_provider.choices.osrm: osrm
+                    genaker.comivoyager.system_configuration.fields.distance_provider.choices.google: google
+                    genaker.comivoyager.system_configuration.fields.distance_provider.choices.postgis: postgis
+                required: true
+                constraints:
+                    - NotBlank: ~
+            priority: 100
+
+        genaker_comi_voyager.geocoder:
+            data_type: string
+            type: Symfony\Component\Form\Extension\Core\Type\ChoiceType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.geocoder.label
+                tooltip: genaker.comivoyager.system_configuration.fields.geocoder.tooltip
+                choices:
+                    genaker.comivoyager.system_configuration.fields.geocoder.choices.nominatim: nominatim
+                    genaker.comivoyager.system_configuration.fields.geocoder.choices.google: google
+                required: true
+                constraints:
+                    - NotBlank: ~
+            priority: 90
+
+        genaker_comi_voyager.osrm_base_url:
+            data_type: string
+            type: 'Symfony\Component\Form\Extension\Core\Type\UrlType'
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.osrm_base_url.label
+                tooltip: genaker.comivoyager.system_configuration.fields.osrm_base_url.tooltip
+                default_protocol: 'https'
+                resettable: true
+                required: true
+                constraints:
+                    - Url: ~
+                    - NotBlank: ~
+                attr:
+                    'data-page-component-module': 'genakercomivoyager/js/app/components/test-connection-component'
+                    'data-page-component-options': '{"provider": "osrm", "buttonLabel": "genaker.comivoyager.system_configuration.test_connection.button"}'
+            priority: 80
+
+        genaker_comi_voyager.google_api_key:
+            data_type: string
+            type: Oro\Bundle\FormBundle\Form\Type\OroEncodedPlaceholderPasswordType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.google_api_key.label
+                tooltip: genaker.comivoyager.system_configuration.fields.google_api_key.tooltip
+                resettable: true
+                required: false
+                attr:
+                    'data-page-component-module': 'genakercomivoyager/js/app/components/test-connection-component'
+                    'data-page-component-options': '{"provider": "google", "buttonLabel": "genaker.comivoyager.system_configuration.test_connection.button"}'
+            priority: 70
+
+        genaker_comi_voyager.default_route_count:
+            data_type: scalar
+            type: Symfony\Component\Form\Extension\Core\Type\IntegerType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.default_route_count.label
+                tooltip: genaker.comivoyager.system_configuration.fields.default_route_count.tooltip
+                resettable: true
+                required: true
+                constraints:
+                    - NotBlank: ~
+                    - Range: { min: 1, max: 10 }
+            priority: 60
+
+        genaker_comi_voyager.enable_geocode_cache:
+            data_type: boolean
+            type: Oro\Bundle\ConfigBundle\Form\Type\ConfigCheckbox
+            options:
+                label: genaker.comivoyager.system_configuration.fields.enable_geocode_cache.label
+                tooltip: genaker.comivoyager.system_configuration.fields.enable_geocode_cache.tooltip
+                required: false
+            priority: 50
+
+        genaker_comi_voyager.geocode_cache_ttl_days:
+            data_type: scalar
+            type: Symfony\Component\Form\Extension\Core\Type\IntegerType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.geocode_cache_ttl_days.label
+                tooltip: genaker.comivoyager.system_configuration.fields.geocode_cache_ttl_days.tooltip
+                resettable: true
+                required: true
+                constraints:
+                    - NotBlank: ~
+                    - Range: { min: 1, max: 365 }
+            priority: 40
+
+        genaker_comi_voyager.max_addresses:
+            data_type: scalar
+            type: Symfony\Component\Form\Extension\Core\Type\IntegerType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.max_addresses.label
+                tooltip: genaker.comivoyager.system_configuration.fields.max_addresses.tooltip
+                resettable: true
+                required: true
+                constraints:
+                    - NotBlank: ~
+                    - Range: { min: 2, max: 1000 }
+            priority: 30
+
+    tree:
+        system_configuration:
+            platform:
+                children:
+                    general_setup:
+                        children:
+                            comivoyager_settings:
+                                children:
+                                    comivoyager_general:
+                                        children:
+                                            - genaker_comi_voyager.distance_provider
+                                            - genaker_comi_voyager.geocoder
+                                            - genaker_comi_voyager.osrm_base_url
+                                            - genaker_comi_voyager.google_api_key
+                                            - genaker_comi_voyager.default_route_count
+                                            - genaker_comi_voyager.enable_geocode_cache
+                                            - genaker_comi_voyager.geocode_cache_ttl_days
+                                            - genaker_comi_voyager.max_addresses

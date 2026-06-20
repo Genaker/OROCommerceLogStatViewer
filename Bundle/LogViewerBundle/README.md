@@ -1,10 +1,12 @@
 # GenakerLogViewerBundle
 
-An OroCommerce admin bundle providing three tools for platform operators:
+An OroCommerce admin bundle providing five tools for platform operators:
 
 - **Log Viewer** — browse, search, tail, and manage application log files from the admin UI
 - **Performance Dashboard** — real-time server metrics (CPU, memory, top processes) and message-queue throughput, aggregated across all PHP-FPM instances
 - **SQL Issue Tracker** — detects, persists, and surfaces N+1 queries and slow queries, with AI-powered analysis via configurable LLM providers
+- **Browser Console Logger** — inject backend PHP data (API calls, debug info) into the browser developer console with CSP nonce support
+- **Database Log Viewer** — write Monolog entries to a database table with a live-tail admin UI, configurable level/channel/write-mode, and automatic cleanup
 
 ---
 
@@ -115,6 +117,204 @@ This bundle installs entirely within the OroCommerce admin panel — no SSH, no 
 | Clear all | One-click button to truncate all tracked issues and start fresh |
 | Auto-detection | Issues are captured via `SqlIssueTrackerListener` on `kernel.terminate` — zero overhead on the critical path |
 
+### Browser Console Logger
+
+A standalone PHP service that passes backend data to the browser developer console — no JS files, no twig changes needed. Works on both storefront and admin pages.
+
+| Feature | Description |
+|---------|-------------|
+| Multiple log methods | `log()`, `info()`, `warn()`, `error()`, `debug()`, `table()`, `group()` / `groupEnd()` |
+| Auto-injection | A `kernel.response` listener injects a `<script>` block before `</body>` in HTML responses |
+| CSP nonce | Every injected script tag gets a unique `nonce` attribute; appended to `Content-Security-Policy` header if present |
+| Memory limits | Configurable max entries (default: 200) and max payload size (default: 1 MB) with truncation warning |
+| Object normalization | Automatically serializes Throwables, JsonSerializable objects, and stringable objects |
+| `[PHP]` prefix | All console entries are prefixed with `[PHP]` for easy filtering in browser DevTools |
+
+**Usage from any PHP service:**
+
+```php
+public function __construct(
+    private readonly BrowserConsoleLogger $consoleLogger,
+) {}
+
+public function someMethod(): void
+{
+    $this->consoleLogger->group('API Call', collapsed: true);
+    $this->consoleLogger->log('Request payload', $requestData);
+    $this->consoleLogger->warn('Slow response', ['ms' => $elapsed]);
+    $this->consoleLogger->table('Line items', $rows);
+    $this->consoleLogger->groupEnd();
+}
+```
+
+### Database Log Viewer (`/admin/log-entries`)
+
+Writes Monolog entries to a PostgreSQL table and provides a terminal-style live-tail UI in the admin panel. File logging always remains active — this feature adds a parallel DB copy for searchable, structured log access.
+
+![Database Log Viewer — Light Theme](Resources/doc/images/db-log-viewer-light.png)
+
+*Database Log Viewer showing grouped log entries with occurrence counts, level badges, expandable context/message/URL columns, column sorting, resizable headers, and real-time stats bar.*
+
+#### Monolog Handler — How It Works
+
+The `DatabaseLogHandler` is registered into Monolog's handler chain via a compiler pass at container build time. It starts **disabled** and is toggled on by the `DatabaseLogConfigListener` on the first `kernel.request` (HTTP) or `console.command` (CLI) event, based on admin config or the `GENAKER_DB_LOG_ENABLED` env var.
+
+| Feature | Description |
+|---------|-------------|
+| File + DB logging | Additional Monolog handler with `bubble: true` — records always pass through to the default file handler first, then optionally to DB |
+| Deferred writes (default) | Buffers entries in memory during the request. Flushed to DB **after** the response is sent via three hooks: `kernel.terminate` (HTTP), `console.terminate` (CLI), `onPostReceived` (MQ consumers) — zero impact on response time |
+| Immediate mode | Writes each entry to DB inline as it happens — useful for debugging crashes or segfaults where the process may die before the deferred flush fires |
+| Level filtering | Configurable minimum log level for DB writes (default: WARNING). Set to DEBUG to capture everything. |
+| Channel filtering | Comma-separated list of Monolog channels to capture (e.g. `app,security,doctrine`). Leave empty to log all channels. |
+| Env var override | `GENAKER_DB_LOG_ENABLED=1` overrides the admin config toggle — works in `.env`, `docker-compose.yml`, or PHP-FPM pool config. Set to `0` to force-disable. When the env var is not set, the admin config value is used. |
+| Re-entrancy guard | Static `$flushing` flag prevents infinite loops if a DB write itself triggers a log entry |
+| Silent failure | DB insert errors are silently dropped — a failed log write never crashes the application |
+| Auto-truncation | Built-in table size monitoring — when the table exceeds the configured max (default: 500 MB), oldest rows are automatically deleted. Checked every N minutes (default: 15), not on every write. No cron required. |
+| Message truncation | Messages longer than 65,535 characters are truncated before insert |
+| JSON context/extra | Context and extra arrays are stored as JSONB columns, fully searchable and expandable in the UI |
+
+#### Flush Events — All Three Runtimes Covered
+
+| Runtime | Flush trigger | Class |
+|---------|---------------|-------|
+| HTTP requests | `kernel.terminate` (after response sent to client) | `DatabaseLogFlushListener` |
+| CLI commands | `console.terminate` (after command finishes) | `DatabaseLogFlushListener` |
+| MQ consumers | `onPostReceived` (after each message processed) | `DatabaseLogMqFlushExtension` |
+
+The config listener also fires on `console.command` (priority 4096) so CLI commands get the correct settings before they start logging.
+
+#### Live Tail UI Features
+
+| Feature | Description |
+|---------|-------------|
+| Terminal-style interface | Dark Catppuccin Mocha theme with macOS-style title bar (matching the file log viewer aesthetic) |
+| Light/dark theme toggle | Click the theme button to switch between dark and light themes; preference saved in `localStorage` |
+| Level filter | Dropdown to show only DEBUG, INFO, WARNING, ERROR, CRITICAL, etc. |
+| Channel filter | Dropdown auto-populated from distinct channels in the DB |
+| Message search | Free-text search on the message column (SQL `LIKE`) |
+| Configurable row count | Load 10–500 rows per fetch (default: 100) |
+| Live tail polling | 3-second auto-refresh that fetches only new rows (by `after_id`) — no duplicate data transfer. Auto-sorts by time (newest first) when live. |
+| Pause/resume | Stop live polling without leaving the page |
+| Clear view | Clear the displayed rows without deleting data from DB |
+| Column sorting | Click any column header to sort (ascending/descending toggle with arrow indicator). Context column excluded. |
+| Resizable columns | Drag column header border to resize; visible border separators between all columns. Message column defaults to 400px (widest). |
+| Expandable cells | Click Message, Context, or URL cells to expand/collapse full content. Context is truncated to configurable length (default: 100 chars). |
+| Context trim | Context JSON truncated to N characters in collapsed view (configurable, default 100). Set to 0 for full display. |
+| Occurrence count column | Color-coded badge: green (<10), yellow (<100), red (100+). Shows how many times a grouped log entry was seen. |
+| First/last seen timestamps | For grouped entries (count > 1), shows both last seen (top) and first seen (bottom, smaller gray text) |
+| URL and IP tracking | Captures `REQUEST_URI` and `REMOTE_ADDR` for each log entry |
+| Stats bar | Always-visible footer showing: Shown rows, DB Rows total, Total Events (sum of all occurrence counts), Table Size (MB/GB), Grouped count, Last refresh, Max ID |
+| Clear All button | Delete all log entries from the database (with confirmation dialog) |
+
+#### Log Grouping / Deduplication
+
+Instead of storing every duplicate log entry, identical messages are merged into one row with an incrementing `occurrence_count`. This dramatically reduces table size for repetitive logs.
+
+| Feature | Description |
+|---------|-------------|
+| Grouping key | MD5 hash of `channel\|level\|first N characters of message` (default N=30, configurable) |
+| PostgreSQL upsert | `INSERT ... ON CONFLICT (message_key) DO UPDATE` — single atomic SQL, no race conditions |
+| Count tracking | `occurrence_count` increments on each duplicate |
+| Timestamp tracking | `first_seen_at` preserves original time, `created_at` updates to latest occurrence |
+| Latest context kept | On duplicate, the latest `context`, `url`, and `ip` overwrite the previous values |
+| Enabled by default | Configurable via admin config or can be disabled for full verbosity |
+| Configurable key length | Shorter key = more aggressive grouping (default 30). Lower to ~20 for Symfony "No routes found" messages. |
+
+#### Database Schema
+
+```sql
+CREATE TABLE genaker_log_entry (
+    id               BIGSERIAL PRIMARY KEY,
+    channel          VARCHAR(64)  NOT NULL,
+    level            SMALLINT     NOT NULL,
+    level_name       VARCHAR(20)  NOT NULL,
+    message          TEXT         NOT NULL,
+    context          JSONB,
+    extra            JSONB,
+    created_at       TIMESTAMP    NOT NULL,
+    url              VARCHAR(2000),
+    ip               VARCHAR(45),
+    message_key      VARCHAR(64)  UNIQUE,  -- MD5 grouping key (NULL = ungrouped)
+    occurrence_count INTEGER      NOT NULL DEFAULT 1,
+    first_seen_at    TIMESTAMP
+);
+-- Indexes: channel, level, created_at, message_key (unique)
+```
+
+#### Enabling the Feature
+
+**Option 1 — Admin UI** (recommended for staging/dev):
+
+Go to **System > Configuration > Platform > General Setup > Log Viewer & Monitoring > Database Log Handler** and check "Enable Database Log Handler". Set the desired level, write mode, and channels, then save.
+
+**Option 2 — Environment variable** (recommended for Docker/CI):
+
+```bash
+# In .env, docker-compose.yml, or PHP-FPM pool config
+GENAKER_DB_LOG_ENABLED=1
+```
+
+The env var takes precedence over the admin config. The handler reads the remaining settings (level, write mode, channels) from admin config even when the env var is used.
+
+**Option 3 — Direct database insert** (when admin UI config save isn't working):
+
+```sql
+INSERT INTO oro_config_value (config_id, name, section, text_value, type, created_at, updated_at)
+VALUES (2, 'db_log_enabled', 'genaker_log_viewer', '1', 'scalar', NOW(), NOW());
+INSERT INTO oro_config_value (config_id, name, section, text_value, type, created_at, updated_at)
+VALUES (2, 'db_log_level', 'genaker_log_viewer', 'DEBUG', 'scalar', NOW(), NOW());
+```
+
+Then clear cache: `php bin/console cache:clear --env=dev`
+
+#### Auto-Truncation (built-in, no cron needed)
+
+The handler includes built-in table size monitoring. After each flush (deferred mode) or periodically during immediate writes, it checks if the `genaker_log_entry` table exceeds the configured max size and automatically deletes the oldest rows to stay under the limit.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `db_log_max_size_mb` | 500 | Maximum table size in MB. When exceeded, oldest rows are deleted. Set to 0 to disable. |
+| `db_log_truncate_interval_min` | 15 | How often to check the table size (in minutes). Uses `pg_total_relation_size()` which is very fast — no sequential scan. |
+
+**How it works:**
+
+1. After `flush()` or after immediate-mode writes, the handler checks if enough time has passed since the last check (default: 15 minutes)
+2. If due, it calls `pg_total_relation_size('genaker_log_entry')` to get the actual table size including indexes and TOAST data
+3. If the table is over the limit, it calculates average row size from `total_size / row_count` (using `pg_class.reltuples` for fast row count estimate)
+4. It deletes enough oldest rows to bring the table back under the limit, plus 20% headroom to avoid re-triggering on the next check
+5. A safety cap prevents deleting more than 90% of the table in one pass
+
+**Example:** If the table is 600 MB with 2M rows (300 bytes/row avg) and the limit is 500 MB, it needs to free 100 MB. With 20% headroom: 120 MB / 300 bytes = ~400K oldest rows deleted.
+
+All errors are silently caught — a failed size check or delete never breaks logging.
+
+#### Auto-Cleanup (Cron — optional, complementary)
+
+The cron command provides time-based cleanup as a complement to the size-based auto-truncation:
+
+```bash
+# Delete entries older than 24 hours, every hour
+0 * * * * php bin/console genaker:log-entry:cleanup --hours=24
+
+# Or match the configured retention period
+0 * * * * php bin/console genaker:log-entry:cleanup --hours=48
+```
+
+The `--hours` flag defaults to 24. The retention period is also configurable in admin config (`db_log_retention_hours`). The cron is optional if auto-truncation by size is sufficient for your use case.
+
+#### Architecture — Key PHP Classes
+
+| Class | Purpose |
+|-------|---------|
+| `Handler/DatabaseLogHandler` | Monolog handler — buffers or writes directly, with channel/level filtering and re-entrancy guard |
+| `DependencyInjection/Compiler/RegisterDatabaseLogHandlerPass` | Compiler pass — pushes handler onto Monolog's logger at container build time |
+| `EventListener/DatabaseLogConfigListener` | `kernel.request` / `console.command` listener — reads config/env var and enables/configures the handler |
+| `EventListener/DatabaseLogFlushListener` | `kernel.terminate` / `console.terminate` listener — flushes deferred buffer to DB |
+| `Consumption/DatabaseLogMqFlushExtension` | MQ extension — flushes deferred buffer after each message |
+| `Controller/LogEntryController` | Admin controller — index page, AJAX tail/channels endpoints, clear all |
+| `Command/CleanupLogEntriesCommand` | `genaker:log-entry:cleanup` — deletes old entries |
+| `Entity/LogEntry` | Doctrine entity mapping for `genaker_log_entry` table |
+
 ---
 
 ## Requirements
@@ -198,6 +398,29 @@ The log directory and other low-level parameters are set in `Resources/config/se
 | `genaker_log_viewer.sql_n1_threshold` | integer | `2` | Minimum repeat count to flag a query as N+1 |
 | `genaker_log_viewer.sql_slow_threshold_ms` | integer | `200` | Query duration threshold in milliseconds to flag as slow |
 
+### Browser Console Logger Settings
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `genaker_log_viewer.browser_console_enabled` | boolean | `true` | Inject backend log data into the browser developer console. Disable on production. |
+| `genaker_log_viewer.browser_console_max_entries` | integer | `200` | Maximum log entries per request (1–10,000) |
+| `genaker_log_viewer.browser_console_max_size_kb` | integer | `1024` | Maximum total payload injected into the page in KB (1–10,240) |
+
+### Database Log Settings
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `genaker_log_viewer.db_log_enabled` | boolean | `false` | Write Monolog entries to the `genaker_log_entry` table. Can be overridden by `GENAKER_DB_LOG_ENABLED` env var. |
+| `genaker_log_viewer.db_log_level` | choice | `WARNING` | Minimum log level written to DB (DEBUG through EMERGENCY) |
+| `genaker_log_viewer.db_log_write_mode` | choice | `deferred` | `deferred` — flush to DB after response/command/MQ message (recommended). `immediate` — write inline during request (for crash debugging). |
+| `genaker_log_viewer.db_log_channels` | string | _(empty = all)_ | Comma-separated Monolog channels to capture. Example: `app,security,doctrine` |
+| `genaker_log_viewer.db_log_retention_hours` | integer | `24` | Entries older than this are deleted by `genaker:log-entry:cleanup` |
+| `genaker_log_viewer.db_log_max_size_mb` | integer | `500` | Max table size in MB. When exceeded, oldest rows auto-deleted on next write cycle. 0 = disabled. |
+| `genaker_log_viewer.db_log_truncate_interval_min` | integer | `15` | How often to check table size for auto-truncation (minutes) |
+| `genaker_log_viewer.db_log_grouping_enabled` | boolean | `true` | Merge duplicate entries by channel+level+message prefix (upsert with occurrence count) |
+| `genaker_log_viewer.db_log_grouping_key_length` | integer | `30` | Characters of message prefix used for grouping key (10–255). Shorter = more aggressive dedup. |
+| `genaker_log_viewer.db_log_context_trim_length` | integer | `100` | Truncate context JSON display to N chars in the UI. 0 = show full context. |
+
 ### AI Analysis Settings
 
 | Key | Type | Default | Description |
@@ -234,6 +457,11 @@ The log directory and other low-level parameters are set in `Resources/config/se
 | `genaker_sql_issue_index` | GET | `/admin/sql-issues` | SQL Issue Tracker grid |
 | `genaker_sql_issue_clear` | POST | `/admin/sql-issues/clear` | Clear all tracked issues |
 | `genaker_sql_issue_ask_ai` | POST | `/admin/sql-issues/{id}/ask-ai` | Trigger AI analysis for one issue; returns `{analysis: string}` or `{error: string}` |
+| `genaker_log_entry_index` | GET | `/admin/log-entries` | Database log viewer (live tail UI) |
+| `genaker_log_entry_tail` | GET | `/admin/log-entries/tail` | AJAX tail endpoint with level/channel/search filters |
+| `genaker_log_entry_channels` | GET | `/admin/log-entries/channels` | List distinct channels in log table |
+| `genaker_log_entry_clear_all` | POST | `/admin/log-entries/clear-all` | Delete all log entries |
+| `genaker_log_entry_stats` | GET | `/admin/log-entries/stats` | Table stats (row count, size, grouping info) |
 
 ---
 
@@ -247,6 +475,7 @@ Defined in `Resources/config/oro/acls.yml`:
 | `genaker_log_viewer_truncate` | Truncate Log Files | Delete and truncate log file actions |
 | `genaker_perf_dashboard_index` | View Performance Dashboard | Performance dashboard and metrics API |
 | `genaker_sql_issue_index` | View SQL Issue Tracker | SQL issue grid and clear action |
+| `genaker_log_entry_index` | View Database Logs | Database log viewer, tail endpoint, channels, and clear action |
 
 Assign these ACL resources to roles under **System → User Management → Roles**.
 
@@ -350,9 +579,13 @@ cd /oro-ee && ORO_ENV=dev ./bin/phpunit -c phpunit-dev.xml \
 # Run a single test class
 cd /oro-ee && ./bin/phpunit -c phpunit-dev.xml \
     --filter LogFileReaderTest --no-coverage
+
+# Run database log integration tests (requires local PostgreSQL)
+INTEGRATION_TESTS_ENABLED=1 php bin/phpunit -c phpunit-dev.xml \
+    --filter DatabaseLogIntegrationTest --no-coverage
 ```
 
-Current test status: **263 unit tests — all passing**.
+Current test status: **343 unit tests + 21 integration tests — all passing**.
 
 ### E2E Tests (Playwright + Python)
 
@@ -489,6 +722,10 @@ npx eslint src/Genaker/Bundle/LogViewerBundle/Resources/public/js/
 | Log datagrid name | `genaker-log-files-grid` |
 | SQL issues datagrid | `genaker_sql_issue_grid` |
 | SQL issue DB table | `genaker_sql_issue` |
+| Log entry DB table | `genaker_log_entry` |
+| Browser console logger | `Genaker\Bundle\LogViewerBundle\Service\BrowserConsoleLogger` |
+| Database log handler | `Genaker\Bundle\LogViewerBundle\Handler\DatabaseLogHandler` |
+| DB log env var override | `GENAKER_DB_LOG_ENABLED=1\|0` |
 | JS module prefix | `genakerlogviewer/js/app/components/` |
 
 ---

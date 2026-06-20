@@ -17,3 +17,8 @@ genaker_sql_issue:
     resource: Genaker\Bundle\LogViewerBundle\Controller\SqlIssueController
     type: attribute
     prefix: /
+
+genaker_log_entry:
+    resource: Genaker\Bundle\LogViewerBundle\Controller\LogEntryController
+    type: attribute
+    prefix: /

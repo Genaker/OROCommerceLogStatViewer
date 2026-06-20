@@ -1,0 +1,6 @@
+acls:
+    genaker_comivoyager_optimize:
+        type: action
+        label: genaker.comivoyager.acl.action.optimize.label
+        group_name: 'commerce'
+        frontend: true

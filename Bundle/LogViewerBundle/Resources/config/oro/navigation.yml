@@ -34,6 +34,14 @@ navigation:
                     routes:
                         - 'genaker_sql_issue_index'
 
+            genaker_log_entry_menu:
+                label:    'Database Logs'
+                route:    'genaker_log_entry_index'
+                position: 540
+                extras:
+                    routes:
+                        - 'genaker_log_entry_index'
+
         tree:
             application_menu:
                 children:
@@ -43,9 +51,11 @@ navigation:
                             genaker_perf_dashboard_menu: ~
                             genaker_http_performance_menu: ~
                             genaker_sql_issue_menu: ~
+                            genaker_log_entry_menu: ~
 
     titles:
         genaker_log_viewer_index:    'Log Files'
         genaker_log_viewer_view:     'View Log File'
         genaker_perf_dashboard_index: 'Server Monitoring'
         genaker_sql_issue_index:     'SQL Performance'
+        genaker_log_entry_index:     'Database Logs'
