@@ -1,0 +1,33 @@
+# Log Worker Configuration
+# DB connection is auto-detected from Oro's .env-app (ORO_DB_URL)
+# Override with explicit DSN if needed:
+# db_dsn: "postgres://user:pass@host:5432/dbname?sslmode=disable"
+
+# Path to Oro's .env-app file (for auto-detecting ORO_DB_URL)
+oro_env_file: "/oro-ee/.env-app"
+
+# Log files to watch (glob patterns supported)
+log_files:
+  - "/oro-ee/var/logs/dev.log"
+  - "/oro-ee/var/logs/prod.log"
+
+# Minimum log level to ingest (DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY)
+min_level: "WARNING"
+
+# Batch insert size (rows per INSERT)
+batch_size: 100
+
+# Flush interval — how often to flush buffered entries to DB (even if batch not full)
+flush_interval_ms: 2000
+
+# Enable log grouping (upsert with occurrence_count)
+grouping_enabled: true
+
+# Grouping key length (characters of message prefix)
+grouping_key_length: 30
+
+# Tail from end of file on startup (true) or read entire file (false)
+tail_from_end: true
+
+# Number of worker goroutines for DB writes
+workers: 2

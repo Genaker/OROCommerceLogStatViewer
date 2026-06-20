@@ -1,3 +1,9 @@
+monolog:
+    handlers:
+        genaker_database:
+            type: service
+            id: Genaker\Bundle\LogViewerBundle\Handler\DatabaseLogHandler
+
 oro_config:
     genaker_log_viewer:
         perf_dashboard_enabled:

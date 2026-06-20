@@ -1,12 +1,13 @@
 # GenakerLogViewerBundle
 
-An OroCommerce admin bundle providing five tools for platform operators:
+An OroCommerce admin bundle providing six tools for platform operators:
 
 - **Log Viewer** — browse, search, tail, and manage application log files from the admin UI
 - **Performance Dashboard** — real-time server metrics (CPU, memory, top processes) and message-queue throughput, aggregated across all PHP-FPM instances
 - **SQL Issue Tracker** — detects, persists, and surfaces N+1 queries and slow queries, with AI-powered analysis via configurable LLM providers
 - **Browser Console Logger** — inject backend PHP data (API calls, debug info) into the browser developer console with CSP nonce support
 - **Database Log Viewer** — write Monolog entries to a database table with a live-tail admin UI, configurable level/channel/write-mode, and automatic cleanup
+- **Go Log Worker** — high-performance Go binary that tails log files and ingests entries into the database independently of PHP
 
 ---
 
@@ -315,11 +316,53 @@ The `--hours` flag defaults to 24. The retention period is also configurable in 
 | `Command/CleanupLogEntriesCommand` | `genaker:log-entry:cleanup` — deletes old entries |
 | `Entity/LogEntry` | Doctrine entity mapping for `genaker_log_entry` table |
 
+### Go Log Worker (`go-worker/`)
+
+A standalone Go binary that tails Monolog log files and ingests entries into the same `genaker_log_entry` table. Runs independently of PHP — no FPM workers consumed, survives PHP crashes, handles log rotation.
+
+| Feature | Description |
+|---------|-------------|
+| File tailing | Watches log files with automatic re-open on rotation |
+| Monolog parser | Regex-based parser for standard Monolog format (timestamp, channel, level, message, context JSON, extra JSON) |
+| Batch inserts | Groups entries into configurable batches (default: 100) in a single transaction |
+| Timer flush | Flushes partial batches every N ms (default: 2000) so entries don't sit in memory |
+| Grouping/dedup | Same `INSERT ON CONFLICT` upsert logic as the PHP handler |
+| Level filtering | Only ingests entries at or above configured level |
+| Glob patterns | Watch multiple files with glob: `/var/logs/*.log` |
+| Auto DB detection | Reads `ORO_DB_URL` from environment or parses Oro's `.env-app` file |
+| Connection pool | pgx pool with configurable max connections |
+| Goroutine per file | Concurrent tailing with buffered channel to writer |
+| Docker ready | Multi-stage Dockerfile, ~15 MB final image |
+| Graceful shutdown | SIGINT/SIGTERM → flush remaining buffer → exit |
+
+**Quick start:**
+
+```bash
+cd src/Genaker/Bundle/LogViewerBundle/go-worker
+go build -o oro-log-worker .
+ORO_DB_URL="postgres://user:pass@localhost:5432/oro_db" ./oro-log-worker
+```
+
+**Docker Compose:**
+
+```yaml
+log-worker:
+  build: src/Genaker/Bundle/LogViewerBundle/go-worker
+  volumes:
+    - ./var/logs:/oro-ee/var/logs:ro
+  environment:
+    - ORO_DB_URL=postgres://oro_db_user:oro_db_pass@pgsql:5432/oro_db
+  restart: unless-stopped
+```
+
+See [`go-worker/README.md`](go-worker/README.md) for full documentation.
+
 ---
 
 ## Requirements
 
 - OroCommerce EE 6.1+
+- Go 1.21+ (only for building the Go log worker)
 - PHP 8.4+
 - Symfony 6.4+
 - Redis (or any PSR-6 `cache.app` pool) for multi-instance metric sharing
@@ -351,9 +394,84 @@ php bin/console assets:install --symlink
 
 ---
 
+## Disabling Features
+
+Every feature in this bundle can be independently enabled or disabled from the admin UI (**System → Configuration → Platform → General Setup → Log Viewer & Monitoring**) — no code changes or deployments needed.
+
+| Feature | Config key | Default | How to disable |
+|---------|-----------|---------|----------------|
+| Log Viewer (file browser) | `genaker_log_viewer.enabled` | On | Uncheck in admin config |
+| Performance Dashboard | `genaker_log_viewer.perf_dashboard_enabled` | On | Uncheck in admin config |
+| HTTP/CLI/MQ Performance | `genaker_log_viewer.http_perf_enabled` | On | Uncheck in admin config |
+| SQL Issue Tracker | `genaker_log_viewer.sql_tracking_enabled` | On | Uncheck in admin config |
+| Browser Console Logger | `genaker_log_viewer.browser_console_enabled` | On | Uncheck in admin config |
+| Database Log Handler (PHP) | `genaker_log_viewer.db_log_enabled` | **Off** | Already off by default |
+| Go Log Worker | — | **Off** | Don't start the binary / remove from Docker Compose |
+
+**When everything is disabled**, the bundle has near-zero overhead: no DB writes, no metrics collection, no script injection. The only cost is Symfony loading the service definitions (microseconds).
+
+**For production**, the recommended configuration is:
+- Log Viewer: **On** (read-only, no overhead)
+- Performance Dashboard: **Off** (reduces Redis writes)
+- SQL Tracker: **Off** (removes kernel.terminate overhead)
+- Browser Console: **Off** (no script injection)
+- DB Log Handler: **Off** via PHP, use **Go Worker** instead (see below)
+
+---
+
+## Database Logging: PHP Handler vs Go Worker
+
+There are two ways to push logs into the `genaker_log_entry` table. They can be used independently or together.
+
+### Option A: PHP Monolog Handler (built-in)
+
+Enable `db_log_enabled` in admin config or set `GENAKER_DB_LOG_ENABLED=1`. Logs are captured during the PHP request lifecycle and flushed to DB on `kernel.terminate` / `console.terminate` / MQ `onPostReceived`.
+
+**Pros:** Zero setup, works immediately, captures Monolog context/extra natively.
+**Cons:** Consumes PHP memory for buffering, can't capture logs from PHP crashes (process dies before flush), adds slight latency to `kernel.terminate`.
+
+### Option B: Go Log Worker (standalone binary)
+
+Run the Go worker as a separate process or Docker container. It tails log files and ingests entries independently.
+
+```bash
+cd src/Genaker/Bundle/LogViewerBundle/go-worker
+go build -o oro-log-worker .
+ORO_DB_URL="postgres://user:pass@host:5432/db" ./oro-log-worker
+```
+
+Or in Docker Compose:
+```yaml
+log-worker:
+  build: src/Genaker/Bundle/LogViewerBundle/go-worker
+  volumes:
+    - ./var/logs:/oro-ee/var/logs:ro
+  environment:
+    - ORO_DB_URL=postgres://user:pass@pgsql:5432/oro_db
+  restart: unless-stopped
+```
+
+**Pros:** No PHP overhead, survives PHP crashes, processes historical logs, in-memory batch grouping (1000 identical lines → 1 DB upsert), auto-detects Oro DB config.
+**Cons:** Requires Go to build (or Docker), parses log files (not native Monolog objects), slight delay from file I/O.
+
+### Option C: Both Together
+
+Use the PHP handler for real-time Monolog-native logging (with context objects) and the Go worker for historical log ingestion and crash resilience. Both use the same grouping key format, so duplicate entries are merged automatically via the `ON CONFLICT` upsert.
+
+### Recommendation
+
+| Environment | Recommendation |
+|-------------|----------------|
+| Development | PHP handler (`GENAKER_DB_LOG_ENABLED=1`, level=DEBUG) |
+| Staging | Go worker (level=WARNING, `tail_from_end: true`) |
+| Production | Go worker only (level=WARNING), PHP handler disabled |
+| OroCloud | Go worker (no PHP config needed, reads log files directly) |
+
+---
+
 ## Configuration
 
-Settings are available under **System → Configuration → Platform → Log Viewer & Monitoring**.
+Settings are available under **System → Configuration → Platform → General Setup → Log Viewer & Monitoring**.
 
 ### Log Viewer Settings
 
