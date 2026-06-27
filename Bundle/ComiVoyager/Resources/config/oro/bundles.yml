@@ -1,2 +1,0 @@
-bundles:
-  - { name: Genaker\Bundle\ComiVoyager\GenakerComiVoyagerBundle, priority: 500 }

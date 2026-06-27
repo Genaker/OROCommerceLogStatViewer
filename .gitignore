@@ -11,3 +11,7 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Other bundles (tracked in their own repos)
+Bundle/ComiVoyager/
+Bundle/LocalIntegrationTests/
