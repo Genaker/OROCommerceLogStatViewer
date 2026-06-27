@@ -222,3 +222,190 @@ Output: the same `RouteCollection::toArray()` JSON shape as the HTTP API
   `lat`/`lng` on an address, unknown `--method`, or fewer than 2 addresses
   (`InsufficientAddressesException`). Error message printed via
   `SymfonyStyle::error()`.
+
+---
+
+## VRP — Multi-Vehicle Routing
+
+The VRP endpoint splits delivery orders across multiple drivers, each getting
+a geographically tight, optimally-sequenced route within their capacity, shift,
+and distance budget. See
+[VRP_PROBLEM_DEFINITION.md](VRP_PROBLEM_DEFINITION.md) for the problem analysis.
+
+### `POST /comivoyager/vrp/optimize`
+
+- **File**: `Controller/VRPController.php`
+- **Routing**: `genaker_comivoyager_vrp_optimize` (attribute route, `expose: true`)
+
+#### Request
+
+```json
+{
+  "depot": {"lat": 40.7128, "lng": -74.0060},
+  "max_radius_miles": 100,
+  "solver": "local",
+  "vehicles": {
+    "count": 3,
+    "capacity_lbs": 40000,
+    "max_stops": 12,
+    "max_distance_miles": 200,
+    "max_work_hours": 8,
+    "avg_speed_mph": 35,
+    "service_time_minutes": 15,
+    "return_to_start": true,
+    "start": {"lat": 40.71, "lng": -74.01},
+    "end":   {"lat": 40.71, "lng": -74.01}
+  },
+  "orders": [
+    {"id": "ORD-1", "lat": 40.75, "lng": -73.99, "weight_lbs": 8000, "priority": "normal", "customer_id": "C-100"}
+  ]
+}
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `depot.lat` / `depot.lng` | yes | Shared warehouse / fallback start point |
+| `orders[]` | yes | Each needs `lat`, `lng`; optional `id`, `weight_lbs`, `priority` (`normal`\|`high`\|`urgent`), `customer_id` |
+| `max_radius_miles` | no | Orders beyond this are flagged `out_of_range` (default `100`) |
+| `solver` | no | `"local"` (K-Means + TSP, free) or `"google"` (Cloud Fleet Routing, paid). Defaults to System Configuration value. |
+| `vehicles.count` | no | Number of identical drivers (default `1`) |
+| `vehicles.*` | no | Shared per-driver settings — see [Per-driver parameters](#per-driver-parameters) below |
+
+#### Heterogeneous fleet
+
+Instead of `vehicles` (homogeneous), pass a `drivers` array where each driver
+has their own settings:
+
+```json
+{
+  "depot": {"lat": 40.7128, "lng": -74.0060},
+  "drivers": [
+    {"id": 1, "capacity_lbs": 40000, "start": {"lat": 40.9, "lng": -73.9}, "max_work_hours": 6},
+    {"id": 2, "capacity_lbs": 26000, "return_to_start": false, "avg_speed_mph": 25}
+  ],
+  "orders": [ ... ]
+}
+```
+
+#### Per-driver parameters
+
+| Field | Default | Description |
+|---|---|---|
+| `capacity_lbs` | `0` (unlimited) | Max load weight |
+| `max_stops` | `0` (unlimited) | Max deliveries per shift |
+| `max_distance_miles` | `0` (unlimited) | Driving-distance cap per shift |
+| `start` | depot | Driver's home / start `{lat, lng}` |
+| `end` | — | Explicit end `{lat, lng}` |
+| `return_to_start` | `true` | Round trip back to start |
+| `avg_speed_mph` | `30` | Driving speed (miles → hours) |
+| `service_time_minutes` | `10` | Unload time per stop |
+| `max_work_hours` | `0` (unlimited) | Shift length; route trimmed to fit |
+
+#### Response
+
+```json
+{
+  "routes": [
+    {
+      "vehicle": 1,
+      "stops": ["ORD-1", "ORD-2", "ORD-5"],
+      "stop_count": 3,
+      "total_distance_miles": 13.4,
+      "total_weight_lbs": 35000,
+      "total_duration_hours": 0.9,
+      "return_leg_miles": 4.1,
+      "stop_details": [
+        {
+          "sequence": 1, "order_id": "ORD-1",
+          "lat": 40.75, "lng": -73.99, "weight_lbs": 8000,
+          "leg_distance_miles": 2.7, "cumulative_distance_miles": 2.7,
+          "arrival_hours": 0.077, "departure_hours": 0.327, "eta_minutes": 4.6
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_distance_miles": 33.5,
+    "max_route_distance": 20.1,
+    "max_route_duration_hours": 1.1,
+    "vehicles_used": 2,
+    "orders_assigned": 6,
+    "orders_unassigned": 0,
+    "orders_out_of_range": 0
+  },
+  "solver": "local"
+}
+```
+
+- `unassigned` orders: dropped because no driver had capacity, or because they
+  exceeded a driver's shift-hours / distance budget.
+- `out_of_range` orders: beyond `max_radius_miles` from the depot.
+
+**`stop_details`** — per-stop leg distance + ETA, in visiting order:
+
+| Field | Description |
+|---|---|
+| `sequence` | 1-based position in the route |
+| `leg_distance_miles` | distance from the previous point (start, or prior stop) |
+| `cumulative_distance_miles` | running distance from the start |
+| `arrival_hours` / `departure_hours` | hours into the shift (0 = leaving start); departure = arrival + service time |
+| `eta_minutes` | `arrival_hours × 60` |
+
+`return_leg_miles` is the final leg back to the end point (0 for an open route).
+
+### `POST /comivoyager/vrp/optimize-orders`
+
+Same solver, but the orders are pulled from **OroCommerce** instead of the
+request body — filtered by internal status and geocoded automatically.
+
+- **File**: `Controller/VRPController.php::optimizeOrdersAction`
+- **Order source**: `Provider/DeliveryOrderProviderInterface` → `OroOrderProvider`
+
+```json
+{
+  "depot": {"lat": 40.7128, "lng": -74.0060},
+  "statuses": ["order_internal_status.open"],
+  "limit": 200,
+  "created_after": "2026-06-23T00:00:00+00:00",
+  "max_radius_miles": 100,
+  "vehicles": {"count": 3, "capacity_lbs": 40000, "max_work_hours": 8}
+}
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `depot` | yes | Shared warehouse / fallback start |
+| `vehicles` / `drivers` | yes | Same fleet config as `/vrp/optimize` |
+| `statuses` | no | Internal-status codes (full enum id or short id). Empty = any. |
+| `limit` | no | Max orders to fetch (default `500`) |
+| `created_after` | no | ISO-8601 timestamp; only orders created on/after |
+| `max_radius_miles` | no | Delivery radius (default `100`) |
+
+Response is identical to `/vrp/optimize`. Orders without a geocodable shipping
+address are skipped. Order **weight** comes from the project's
+`OrderWeightResolverInterface` (default `NullWeightResolver` → `0` lbs).
+
+### CLI: `comivoyager:vrp:optimize`
+
+```bash
+php bin/console comivoyager:vrp:optimize <json-file> [options]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `--vehicles=`, `-k` | `2` | Number of drivers |
+| `--capacity=`, `-c` | `0` | Capacity per driver (lbs) |
+| `--max-stops=` | `0` | Max deliveries per driver |
+| `--work-hours=` | `0` | Max shift hours per driver |
+| `--speed=` | `30` | Average driving speed (mph) |
+| `--service-time=` | `10` | Service time per stop (minutes) |
+| `--one-way` | off | Open routes — do not return to start |
+| `--radius=`, `-r` | `100` | Max delivery radius (miles) |
+
+```bash
+php bin/console comivoyager:vrp:optimize orders.json \
+    --vehicles=3 --capacity=40000 --work-hours=8 --speed=35 --max-stops=12
+```
+
+Output: one section per driver (ordered stops, distance, weight, shift hours),
+warnings for `unassigned` / `out_of_range` orders, and a totals summary.

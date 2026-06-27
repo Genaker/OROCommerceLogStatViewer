@@ -52,6 +52,12 @@
 .dbl-expandable.dbl-expanded { white-space: pre-wrap; overflow: visible; text-overflow: unset; }
 .dbl-msg { word-break: break-word; }
 .dbl-context { color: #6c7086; font-size: 11px; }
+.dbl-copy-btn { background: none; border: 1px solid #45475a; color: #6c7086; cursor: pointer; padding: 2px 6px; border-radius: 3px; font-size: 11px; white-space: nowrap; }
+.dbl-copy-btn:hover { background: #313244; color: #cdd6f4; }
+.dbl-copy-btn.dbl-copied { border-color: #a6e3a1; color: #a6e3a1; }
+.dbl-light .dbl-copy-btn { border-color: #ced4da; color: #868e96; }
+.dbl-light .dbl-copy-btn:hover { background: #e9ecef; color: #212529; }
+.dbl-light .dbl-copy-btn.dbl-copied { border-color: #40c057; color: #40c057; }
 .dbl-live { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
 .dbl-live-on { background: #a6e3a1; animation: dbl-pulse 2s infinite; }
 .dbl-live-off { background: #f38ba8; }
@@ -159,7 +165,8 @@
                     <th data-sort="message" data-type="str" style="width:400px;">Message<span class="dbl-resize"></span></th>
                     <th style="width:200px;">Context<span class="dbl-resize"></span></th>
                     <th data-sort="url" data-type="str" style="width:180px;">URL<span class="dbl-resize"></span></th>
-                    <th data-sort="ip" data-type="str" style="width:100px;">IP</th>
+                    <th data-sort="ip" data-type="str" style="width:100px;">IP<span class="dbl-resize"></span></th>
+                    <th style="width:40px;"></th>
                 </tr>
             </thead>
             <tbody id="dbl-tbody"></tbody>
@@ -242,6 +249,76 @@
                '<br><span style="color:#585b70;font-size:10px;">first: ' + first + '</span>';
     }
 
+    function toMarkdown(r) {
+        var lines = [];
+        lines.push('## Log Entry #' + r.id);
+        lines.push('');
+        lines.push('| Field | Value |');
+        lines.push('|-------|-------|');
+        lines.push('| **Level** | `' + (r.level_name || '') + '` |');
+        lines.push('| **Channel** | `' + (r.channel || '') + '` |');
+        lines.push('| **Last Seen** | ' + (r.created_at || '') + ' |');
+        if (r.first_seen_at) {
+            lines.push('| **First Seen** | ' + r.first_seen_at + ' |');
+        }
+        var cnt = parseInt(r.occurrence_count, 10) || 1;
+        if (cnt > 1) {
+            lines.push('| **Occurrences** | ' + cnt.toLocaleString() + ' |');
+        }
+        lines.push('| **URL** | `' + (r.url || 'N/A') + '` |');
+        lines.push('| **IP** | `' + (r.ip || 'N/A') + '` |');
+        lines.push('');
+        lines.push('### Message');
+        lines.push('');
+        lines.push('```');
+        lines.push(r.message || '');
+        lines.push('```');
+        if (r.context && Object.keys(r.context).length > 0) {
+            lines.push('');
+            lines.push('### Context');
+            lines.push('');
+            lines.push('```json');
+            try { lines.push(JSON.stringify(r.context, null, 2)); } catch(e) { lines.push(String(r.context)); }
+            lines.push('```');
+        }
+        if (r.extra && Object.keys(r.extra).length > 0) {
+            lines.push('');
+            lines.push('### Extra');
+            lines.push('');
+            lines.push('```json');
+            try { lines.push(JSON.stringify(r.extra, null, 2)); } catch(e) { lines.push(String(r.extra)); }
+            lines.push('```');
+        }
+        return lines.join('\n');
+    }
+
+    function copyToClipboard(text, btn) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showCopied(btn);
+            });
+        } else {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showCopied(btn);
+        }
+    }
+
+    function showCopied(btn) {
+        btn.textContent = '✓';
+        btn.classList.add('dbl-copied');
+        setTimeout(function() {
+            btn.innerHTML = '&#128203;';
+            btn.classList.remove('dbl-copied');
+        }, 1500);
+    }
+
     function renderRow(r) {
         var tr = document.createElement('tr');
 
@@ -260,7 +337,8 @@
                 (hasCtxMore ? ' data-short="' + ctxShort.replace(/"/g, '&quot;') + '" data-full="' + ctxFullHtml.replace(/"/g, '&quot;') + '"' : '') +
                 '>' + ctxShort + '</td>' +
             '<td class="dbl-expandable" style="color:#6c7086;">' + esc(r.url || '') + '</td>' +
-            '<td style="color:#6c7086;">' + esc(r.ip || '') + '</td>';
+            '<td style="color:#6c7086;">' + esc(r.ip || '') + '</td>' +
+            '<td><button class="dbl-copy-btn" title="Copy as Markdown (AI-ready)">&#128203;</button></td>';
 
         tr.querySelectorAll('.dbl-expandable').forEach(function(td) {
             td.addEventListener('click', function() {
@@ -269,6 +347,10 @@
                     td.innerHTML = td.classList.contains('dbl-expanded') ? td.dataset.full : td.dataset.short;
                 }
             });
+        });
+
+        tr.querySelector('.dbl-copy-btn').addEventListener('click', function() {
+            copyToClipboard(toMarkdown(r), this);
         });
 
         return tr;

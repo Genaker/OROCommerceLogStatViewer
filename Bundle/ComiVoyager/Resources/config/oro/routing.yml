@@ -6,6 +6,16 @@ genaker_comivoyager_optimize:
     options:
         frontend: true
 
+genaker_comivoyager_vrp:
+    resource: Genaker\Bundle\ComiVoyager\Controller\VRPController
+    type: attribute
+    prefix: /
+
+genaker_comivoyager_planner:
+    resource: Genaker\Bundle\ComiVoyager\Controller\RoutePlannerController
+    type: attribute
+    prefix: /
+
 genaker_comivoyager_test_connection:
     path: /comivoyager/admin/test-connection/{provider}
     methods: [POST]

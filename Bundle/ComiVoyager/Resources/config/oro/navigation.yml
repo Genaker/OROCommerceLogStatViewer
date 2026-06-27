@@ -1,0 +1,19 @@
+navigation:
+    menu_config:
+        items:
+            genaker_comivoyager_planner_menu:
+                label: genaker.comivoyager.planner.title
+                route: genaker_comivoyager_planner
+                extras:
+                    routes:
+                        - 'genaker_comivoyager_planner'
+
+        tree:
+            application_menu:
+                children:
+                    sales_tab:
+                        children:
+                            genaker_comivoyager_planner_menu: ~
+
+    titles:
+        genaker_comivoyager_planner: genaker.comivoyager.planner.title

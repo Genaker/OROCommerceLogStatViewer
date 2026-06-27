@@ -4,3 +4,9 @@ acls:
         label: genaker.comivoyager.acl.action.optimize.label
         group_name: 'commerce'
         frontend: true
+
+    genaker_comivoyager_planner:
+        type: action
+        label: genaker.comivoyager.acl.action.planner.label
+        group_name: ''
+        category: 'commerce'

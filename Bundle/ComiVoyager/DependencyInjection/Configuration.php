@@ -35,6 +35,11 @@ class Configuration implements ConfigurationInterface
                 'enable_geocode_cache' => ['type' => 'boolean', 'value' => true],
                 'geocode_cache_ttl_days' => ['type' => 'scalar', 'value' => 30],
                 'max_addresses' => ['type' => 'scalar', 'value' => 9],
+                'depot_lat' => ['type' => 'scalar', 'value' => null],
+                'depot_lng' => ['type' => 'scalar', 'value' => null],
+                'default_drivers' => ['type' => 'scalar', 'value' => 3],
+                'vrp_solver' => ['type' => 'scalar', 'value' => 'local'],
+                'google_project_id' => ['type' => 'scalar', 'value' => null],
             ]
         );
 

@@ -14,22 +14,21 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 final class GenakerComiVoyagerExtension extends Extension implements PrependExtensionInterface
 {
     private const POSTGIS_DSN_ENV = 'ORO_COMIVOYAGER_POSTGIS_DSN';
-    private const POSTGIS_DSN_DEFAULT = 'postgresql://comivoyager:comivoyager@comivoyager_postgis:5432/comivoyager';
 
     public function load(array $configs, ContainerBuilder $container): void
     {
         $config = $this->processConfiguration($this->getConfiguration($configs, $container), $configs);
         $container->prependExtensionConfig($this->getAlias(), SettingsBuilder::getSettings($config));
 
-        // Provide a default for the PostGIS DSN env var, mirroring the
-        // `parameters: env(X): <default>` pattern from config/config.yml,
-        // so the bundle is self-contained and needs no app-level config.
-        if (!$container->hasParameter('env(' . self::POSTGIS_DSN_ENV . ')')) {
-            $container->setParameter('env(' . self::POSTGIS_DSN_ENV . ')', self::POSTGIS_DSN_DEFAULT);
-        }
-
         $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__) . '/Resources/config'));
         $loader->load('services.yml');
+
+        // Remove the PostGIS distance provider if no DSN is configured.
+        // This prevents Doctrine from trying to connect to a non-existent
+        // PostGIS server during schema checks / requirements validation.
+        if (!$this->isPostgisConfigured()) {
+            $container->removeDefinition('Genaker\Bundle\ComiVoyager\Distance\PostgisDistanceMatrixProvider');
+        }
     }
 
     public function prepend(ContainerBuilder $container): void
@@ -46,15 +45,7 @@ final class GenakerComiVoyagerExtension extends Extension implements PrependExte
             ],
         ]);
 
-        $container->prependExtensionConfig('doctrine', [
-            'dbal' => [
-                'connections' => [
-                    'comivoyager_postgis' => [
-                        'url' => '%env(' . self::POSTGIS_DSN_ENV . ')%',
-                        'server_version' => '17',
-                    ],
-                ],
-            ],
+        $doctrineConfig = [
             'orm' => [
                 'mappings' => [
                     'GenakerComiVoyagerBundle' => [
@@ -66,11 +57,35 @@ final class GenakerComiVoyagerExtension extends Extension implements PrependExte
                     ],
                 ],
             ],
-        ]);
+        ];
+
+        // Only register the PostGIS DBAL connection when the DSN env var is
+        // explicitly set. This avoids Doctrine trying to connect to a
+        // non-existent server during cache warmup, schema checks, or
+        // requirements validation.
+        if ($this->isPostgisConfigured()) {
+            $doctrineConfig['dbal'] = [
+                'connections' => [
+                    'comivoyager_postgis' => [
+                        'url' => '%env(' . self::POSTGIS_DSN_ENV . ')%',
+                        'server_version' => '17',
+                    ],
+                ],
+            ];
+        }
+
+        $container->prependExtensionConfig('doctrine', $doctrineConfig);
     }
 
     public function getAlias(): string
     {
         return 'genaker_comi_voyager';
+    }
+
+    private function isPostgisConfigured(): bool
+    {
+        $dsn = getenv(self::POSTGIS_DSN_ENV);
+
+        return $dsn !== false && $dsn !== '';
     }
 }

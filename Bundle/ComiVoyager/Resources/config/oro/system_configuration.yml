@@ -74,6 +74,34 @@ system_configuration:
                     'data-page-component-options': '{"provider": "google", "buttonLabel": "genaker.comivoyager.system_configuration.test_connection.button"}'
             priority: 70
 
+        genaker_comi_voyager.vrp_solver:
+            data_type: string
+            type: Symfony\Component\Form\Extension\Core\Type\ChoiceType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.vrp_solver.label
+                tooltip: genaker.comivoyager.system_configuration.fields.vrp_solver.tooltip
+                choices:
+                    genaker.comivoyager.system_configuration.fields.vrp_solver.choices.local: local
+                    genaker.comivoyager.system_configuration.fields.vrp_solver.choices.google: google
+                required: true
+                constraints:
+                    - NotBlank: ~
+                    - Choice:
+                          choices: [local, google]
+            priority: 68
+
+        genaker_comi_voyager.google_project_id:
+            data_type: string
+            type: Symfony\Component\Form\Extension\Core\Type\TextType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.google_project_id.label
+                tooltip: genaker.comivoyager.system_configuration.fields.google_project_id.tooltip
+                resettable: true
+                required: false
+            priority: 66
+
         genaker_comi_voyager.default_route_count:
             data_type: scalar
             type: Symfony\Component\Form\Extension\Core\Type\IntegerType
@@ -125,6 +153,43 @@ system_configuration:
                     - Range: { min: 2, max: 1000 }
             priority: 30
 
+        genaker_comi_voyager.depot_lat:
+            data_type: scalar
+            type: Symfony\Component\Form\Extension\Core\Type\NumberType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.depot_lat.label
+                tooltip: genaker.comivoyager.system_configuration.fields.depot_lat.tooltip
+                resettable: true
+                required: false
+                scale: 7
+            priority: 25
+
+        genaker_comi_voyager.depot_lng:
+            data_type: scalar
+            type: Symfony\Component\Form\Extension\Core\Type\NumberType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.depot_lng.label
+                tooltip: genaker.comivoyager.system_configuration.fields.depot_lng.tooltip
+                resettable: true
+                required: false
+                scale: 7
+            priority: 24
+
+        genaker_comi_voyager.default_drivers:
+            data_type: scalar
+            type: Symfony\Component\Form\Extension\Core\Type\IntegerType
+            search_type: text
+            options:
+                label: genaker.comivoyager.system_configuration.fields.default_drivers.label
+                tooltip: genaker.comivoyager.system_configuration.fields.default_drivers.tooltip
+                resettable: true
+                required: false
+                constraints:
+                    - Range: { min: 1, max: 100 }
+            priority: 23
+
     tree:
         system_configuration:
             platform:
@@ -139,6 +204,11 @@ system_configuration:
                                             - genaker_comi_voyager.geocoder
                                             - genaker_comi_voyager.osrm_base_url
                                             - genaker_comi_voyager.google_api_key
+                                            - genaker_comi_voyager.google_project_id
+                                            - genaker_comi_voyager.vrp_solver
+                                            - genaker_comi_voyager.depot_lat
+                                            - genaker_comi_voyager.depot_lng
+                                            - genaker_comi_voyager.default_drivers
                                             - genaker_comi_voyager.default_route_count
                                             - genaker_comi_voyager.enable_geocode_cache
                                             - genaker_comi_voyager.geocode_cache_ttl_days

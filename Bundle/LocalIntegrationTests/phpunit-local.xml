@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Local integration tests for Genaker standalone module.
+
+  Run from project root:
+    INTEGRATION_TESTS_ENABLED=1 php bin/phpunit -c src/Genaker/Bundle/LocalIntegrationTests/phpunit-local.xml
+-->
+<phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd"
+    bootstrap="bootstrap.php"
+    backupGlobals="false"
+    beStrictAboutTestsThatDoNotTestAnything="false"
+    verbose="true">
+
+    <testsuites>
+        <testsuite name="unit">
+            <directory>Tests/Unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory>Tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <env name="INTEGRATION_TESTS_ENABLED" value="1" force="true"/>
+        <server name="INTEGRATION_TESTS_ENABLED" value="1"/>
+        <env name="ORO_ENV" value="dev"/>
+        <env name="ORO_DEBUG" value="0"/>
+        <env name="ORO_TEST_SSL_VERIFY" value="0"/>
+        <ini name="error_reporting" value="-1"/>
+    </php>
+</phpunit>

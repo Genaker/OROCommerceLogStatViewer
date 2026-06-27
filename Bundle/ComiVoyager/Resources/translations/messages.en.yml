@@ -33,6 +33,23 @@ genaker.comivoyager.system_configuration.fields.geocode_cache_ttl_days.tooltip: 
 genaker.comivoyager.system_configuration.fields.max_addresses.label: Maximum Addresses Per Request
 genaker.comivoyager.system_configuration.fields.max_addresses.tooltip: Maximum number of addresses accepted in a single optimization request. Requests exceeding this limit are rejected with an error. Up to 9 addresses, all returned routes are provably optimal; above 9 the solver switches to faster approximate strategies for the ranked alternatives.
 
+genaker.comivoyager.system_configuration.fields.vrp_solver.label: VRP Solver Backend
+genaker.comivoyager.system_configuration.fields.vrp_solver.tooltip: Select the route optimization engine. "Local" uses built-in K-Means + TSP (free, offline). "Google" uses Cloud Fleet Routing API (paid, real-road, traffic-aware).
+genaker.comivoyager.system_configuration.fields.vrp_solver.choices.local: Local (K-Means + TSP, free)
+genaker.comivoyager.system_configuration.fields.vrp_solver.choices.google: Google Cloud Fleet Routing (paid)
+genaker.comivoyager.system_configuration.fields.google_project_id.label: Google Cloud Project ID
+genaker.comivoyager.system_configuration.fields.google_project_id.tooltip: Your Google Cloud project ID for the Route Optimization API (e.g. "my-project-12345"). Required when using the Google VRP solver.
+
+genaker.comivoyager.system_configuration.fields.depot_lat.label: Depot Latitude
+genaker.comivoyager.system_configuration.fields.depot_lat.tooltip: Latitude of the warehouse / depot used as the default route start point in the Route Planner.
+genaker.comivoyager.system_configuration.fields.depot_lng.label: Depot Longitude
+genaker.comivoyager.system_configuration.fields.depot_lng.tooltip: Longitude of the warehouse / depot used as the default route start point in the Route Planner.
+genaker.comivoyager.system_configuration.fields.default_drivers.label: Default Delivery Drivers
+genaker.comivoyager.system_configuration.fields.default_drivers.tooltip: Default number of delivery drivers/trucks pre-filled in the Route Planner.
+
 genaker.comivoyager.system_configuration.test_connection.button: Test Connection
 genaker.comivoyager.system_configuration.test_connection.testing: Testing...
 genaker.comivoyager.system_configuration.test_connection.error: Could not test the connection. Please try again.
+
+genaker.comivoyager.planner.title: Delivery Route Planner
+genaker.comivoyager.acl.action.planner.label: Use Delivery Route Planner

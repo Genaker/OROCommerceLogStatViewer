@@ -1,0 +1,272 @@
+{% extends '@OroUI/actions/index.html.twig' %}
+
+{% set pageTitle = 'genaker.comivoyager.planner.title'|trans %}
+
+{% block page_title %}{{ 'genaker.comivoyager.planner.title'|trans }}{% endblock %}
+
+{% block content %}
+{{ parent() }}
+
+<style>
+.cvp-wrap { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 10px 0; }
+.cvp-form { background: #f6f7f9; border: 1px solid #dfe2e6; border-radius: 8px; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.cvp-field { display: flex; flex-direction: column; gap: 4px; }
+.cvp-field label { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: #6b7280; }
+.cvp-field input { border: 1px solid #ccd1d9; border-radius: 4px; padding: 6px 8px; font-size: 13px; }
+.cvp-input-sm { width: 70px; } .cvp-input-md { width: 110px; } .cvp-input-lg { width: 220px; }
+.cvp-btn { background: #1f7ae0; color: #fff; border: none; border-radius: 4px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.cvp-btn:hover { background: #1668c4; }
+.cvp-btn:disabled { background: #9bb8db; cursor: default; }
+.cvp-btn-secondary { background: #fff; color: #1f7ae0; border: 1px solid #1f7ae0; }
+.cvp-btn-secondary:hover { background: #eef5fd; }
+.cvp-status { margin: 12px 0; font-size: 13px; color: #6b7280; }
+.cvp-summary { display: flex; gap: 18px; flex-wrap: wrap; background: #eef2f7; border-radius: 6px; padding: 10px 14px; margin: 12px 0; font-size: 13px; }
+.cvp-summary b { color: #111827; }
+.cvp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 14px; }
+.cvp-card { border: 1px solid #dfe2e6; border-radius: 8px; overflow: hidden; }
+.cvp-card-head { padding: 10px 14px; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+.cvp-card-head h3 { margin: 0; font-size: 14px; }
+.cvp-card-meta { font-size: 12px; opacity: .92; }
+.cvp-card-csv { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.5); color: #fff; border-radius: 4px; padding: 3px 9px; font-size: 12px; cursor: pointer; }
+.cvp-card-csv:hover { background: rgba(255,255,255,.32); }
+.cvp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cvp-table th { background: #f6f7f9; text-align: left; padding: 6px 10px; color: #6b7280; font-weight: 600; border-bottom: 1px solid #e5e7eb; }
+.cvp-table td { padding: 6px 10px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+.cvp-table tr:last-child td { border-bottom: none; }
+.cvp-addr { color: #374151; max-width: 220px; }
+.cvp-eta { font-variant-numeric: tabular-nums; color: #1f7ae0; font-weight: 600; }
+.cvp-warn { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 6px; padding: 10px 14px; margin: 12px 0; font-size: 13px; }
+.cvp-empty { color: #9ca3af; padding: 30px; text-align: center; }
+</style>
+
+<div class="cvp-wrap" id="cvp-root"
+     data-optimize-url="{{ path('genaker_comivoyager_vrp_optimize_orders') }}"
+     data-csrf="{{ csrf_token('') }}">
+
+    <div class="cvp-form">
+        <div class="cvp-field">
+            <label>Depot Lat</label>
+            <input type="number" step="any" id="cvp-depot-lat" class="cvp-input-md" value="{{ depotLat is not null ? depotLat : '' }}">
+        </div>
+        <div class="cvp-field">
+            <label>Depot Lng</label>
+            <input type="number" step="any" id="cvp-depot-lng" class="cvp-input-md" value="{{ depotLng is not null ? depotLng : '' }}">
+        </div>
+        <div class="cvp-field">
+            <label>Drivers</label>
+            <input type="number" min="1" max="100" id="cvp-drivers" class="cvp-input-sm" value="{{ defaultDrivers }}">
+        </div>
+        <div class="cvp-field">
+            <label>Capacity (lbs)</label>
+            <input type="number" min="0" id="cvp-capacity" class="cvp-input-md" value="0">
+        </div>
+        <div class="cvp-field">
+            <label>Work hours</label>
+            <input type="number" min="0" step="0.5" id="cvp-hours" class="cvp-input-sm" value="8">
+        </div>
+        <div class="cvp-field">
+            <label>Speed (mph)</label>
+            <input type="number" min="1" id="cvp-speed" class="cvp-input-sm" value="30">
+        </div>
+        <div class="cvp-field">
+            <label>Radius (mi)</label>
+            <input type="number" min="0" id="cvp-radius" class="cvp-input-sm" value="100">
+        </div>
+        <div class="cvp-field">
+            <label>Order statuses</label>
+            <input type="text" id="cvp-statuses" class="cvp-input-lg" value="order_internal_status.open" placeholder="comma-separated, blank = all">
+        </div>
+        <div class="cvp-field">
+            <label>Max orders</label>
+            <input type="number" min="1" id="cvp-limit" class="cvp-input-sm" value="200">
+        </div>
+        <button class="cvp-btn" id="cvp-run">&#9658; Plan Routes</button>
+        <button class="cvp-btn cvp-btn-secondary" id="cvp-csv-all" style="display:none;">&#8681; Download All (CSV)</button>
+    </div>
+
+    <div class="cvp-status" id="cvp-status"></div>
+    <div id="cvp-summary"></div>
+    <div id="cvp-warnings"></div>
+    <div class="cvp-cards" id="cvp-cards"></div>
+</div>
+
+<script>
+(function(){
+    var root = document.getElementById('cvp-root');
+    var url = root.dataset.optimizeUrl;
+    var csrf = root.dataset.csrf;
+
+    var colors = ['#1f7ae0','#16a34a','#db2777','#d97706','#7c3aed','#0891b2','#dc2626','#65a30d','#0d9488','#c026d3'];
+    var lastSolution = null;
+
+    function esc(s){ var d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+    function val(id){ return document.getElementById(id).value; }
+
+    function buildPayload(){
+        var statuses = val('cvp-statuses').split(',').map(function(s){return s.trim();}).filter(Boolean);
+        return {
+            depot: { lat: parseFloat(val('cvp-depot-lat')), lng: parseFloat(val('cvp-depot-lng')) },
+            statuses: statuses,
+            limit: parseInt(val('cvp-limit'), 10) || 200,
+            max_radius_miles: parseFloat(val('cvp-radius')) || 100,
+            vehicles: {
+                count: parseInt(val('cvp-drivers'), 10) || 1,
+                capacity_lbs: parseFloat(val('cvp-capacity')) || 0,
+                max_work_hours: parseFloat(val('cvp-hours')) || 0,
+                avg_speed_mph: parseFloat(val('cvp-speed')) || 30,
+                return_to_start: true
+            }
+        };
+    }
+
+    function run(){
+        var payload = buildPayload();
+        if (isNaN(payload.depot.lat) || isNaN(payload.depot.lng)) {
+            setStatus('Please enter the depot latitude and longitude.');
+            return;
+        }
+        var btn = document.getElementById('cvp-run');
+        btn.disabled = true;
+        setStatus('Pulling and routing today’s orders…');
+        document.getElementById('cvp-cards').innerHTML = '';
+        document.getElementById('cvp-summary').innerHTML = '';
+        document.getElementById('cvp-warnings').innerHTML = '';
+        document.getElementById('cvp-csv-all').style.display = 'none';
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Header': '1', 'X-CSRF-Token': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            btn.disabled = false;
+            if (data.error) { setStatus('Error: ' + data.error); return; }
+            lastSolution = data;
+            render(data);
+        })
+        .catch(function(e){ btn.disabled = false; setStatus('Request failed: ' + e); });
+    }
+
+    function setStatus(msg){ document.getElementById('cvp-status').textContent = msg; }
+
+    function render(data){
+        var routes = data.routes || [];
+        var s = data.summary || {};
+
+        if (routes.length === 0) {
+            setStatus('');
+            document.getElementById('cvp-cards').innerHTML = '<div class="cvp-empty">No routable orders found for the selected statuses.</div>';
+            return;
+        }
+        setStatus('');
+
+        document.getElementById('cvp-summary').innerHTML =
+            '<div class="cvp-summary">' +
+            '<span>Drivers used: <b>' + (s.vehicles_used||0) + '</b></span>' +
+            '<span>Orders assigned: <b>' + (s.orders_assigned||0) + '</b></span>' +
+            '<span>Total distance: <b>' + (s.total_distance_miles||0) + ' mi</b></span>' +
+            '<span>Longest route: <b>' + (s.max_route_distance||0) + ' mi</b></span>' +
+            '<span>Longest shift: <b>' + (s.max_route_duration_hours||0) + ' h</b></span>' +
+            '</div>';
+
+        var warn = '';
+        if (s.orders_unassigned > 0) warn += '<div class="cvp-warn">&#9888; ' + s.orders_unassigned + ' orders could not be assigned (capacity, work-hours, or distance budget).</div>';
+        if (s.orders_out_of_range > 0) warn += '<div class="cvp-warn">&#9888; ' + s.orders_out_of_range + ' orders are out of the delivery radius.</div>';
+        document.getElementById('cvp-warnings').innerHTML = warn;
+
+        var cards = document.getElementById('cvp-cards');
+        cards.innerHTML = '';
+        routes.forEach(function(route, i){
+            cards.appendChild(buildCard(route, i));
+        });
+
+        document.getElementById('cvp-csv-all').style.display = '';
+    }
+
+    function buildCard(route, i){
+        var color = colors[i % colors.length];
+        var card = document.createElement('div');
+        card.className = 'cvp-card';
+
+        var rows = (route.stop_details || []).map(function(d){
+            return '<tr>' +
+                '<td>' + d.sequence + '</td>' +
+                '<td>' + esc(d.order_id) + '</td>' +
+                '<td class="cvp-addr">' + esc(d.address || (d.lat + ', ' + d.lng)) + '</td>' +
+                '<td>' + (d.weight_lbs||0) + '</td>' +
+                '<td>' + d.leg_distance_miles + '</td>' +
+                '<td class="cvp-eta">+' + Math.round(d.eta_minutes) + 'm</td>' +
+            '</tr>';
+        }).join('');
+
+        card.innerHTML =
+            '<div class="cvp-card-head" style="background:' + color + ';">' +
+                '<div><h3>Driver ' + route.vehicle + '</h3>' +
+                '<div class="cvp-card-meta">' + route.stop_count + ' stops &middot; ' +
+                    route.total_distance_miles + ' mi &middot; ' +
+                    route.total_weight_lbs + ' lbs &middot; ' +
+                    route.total_duration_hours + ' h</div></div>' +
+                '<button class="cvp-card-csv" data-driver="' + i + '">&#8681; CSV</button>' +
+            '</div>' +
+            '<table class="cvp-table"><thead><tr>' +
+                '<th>#</th><th>Order</th><th>Address</th><th>Weight</th><th>Leg mi</th><th>ETA</th>' +
+            '</tr></thead><tbody>' + rows + '</tbody></table>';
+
+        card.querySelector('.cvp-card-csv').addEventListener('click', function(){
+            downloadDriverCsv(route);
+        });
+        return card;
+    }
+
+    function csvCell(v){
+        v = (v == null) ? '' : String(v);
+        if (/[",\n]/.test(v)) { v = '"' + v.replace(/"/g, '""') + '"'; }
+        return v;
+    }
+
+    function routeToCsvRows(route){
+        var rows = [];
+        (route.stop_details || []).forEach(function(d){
+            rows.push([
+                route.vehicle, d.sequence, d.order_id, d.address || '',
+                d.lat, d.lng, d.weight_lbs, d.leg_distance_miles,
+                d.cumulative_distance_miles, Math.round(d.eta_minutes)
+            ].map(csvCell).join(','));
+        });
+        return rows;
+    }
+
+    var CSV_HEADER = 'Driver,Stop,Order,Address,Lat,Lng,Weight(lbs),Leg(mi),Cumulative(mi),ETA(min)';
+
+    function triggerDownload(filename, content){
+        var blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    }
+
+    function downloadDriverCsv(route){
+        var content = CSV_HEADER + '\n' + routeToCsvRows(route).join('\n');
+        triggerDownload('route-driver-' + route.vehicle + '.csv', content);
+    }
+
+    function downloadAllCsv(){
+        if (!lastSolution) return;
+        var rows = [CSV_HEADER];
+        (lastSolution.routes || []).forEach(function(route){
+            rows = rows.concat(routeToCsvRows(route));
+        });
+        triggerDownload('routes-all-drivers.csv', rows.join('\n'));
+    }
+
+    document.getElementById('cvp-run').addEventListener('click', run);
+    document.getElementById('cvp-csv-all').addEventListener('click', downloadAllCsv);
+})();
+</script>
+{% endblock %}
